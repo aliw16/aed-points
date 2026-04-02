@@ -514,13 +514,15 @@
   }
 
   function standing(m) {
-    const failing = CAT_KEYS.filter(k => (m[k]||0) < REQS[k]).length;
-    return failing === 0 ? 'good' : failing <= 1 ? 'warn' : 'bad';
+    const metCount = CAT_KEYS.filter(k => (m[k]||0) >= REQS[k]).length;
+    if (metCount === CAT_KEYS.length) return 'good';
+    if (metCount >= 3 || (m.total||0) >= 7) return 'warn';
+    return 'bad';
   }
   function standingPill(m) {
     const s = standing(m);
     const cls = s==='good'?'pill-good':s==='warn'?'pill-warn':'pill-bad';
-    const lbl = s==='good'?'Good standing':s==='warn'?'At risk':'Probation';
+    const lbl = s==='good'?'Requirements met':s==='warn'?'On pace':'At risk';
     return `<span class="pill ${cls}">${lbl}</span>`;
   }
   function dotColor(m) {
@@ -584,15 +586,15 @@
       </div>
       <div class="stat-card">
         <div class="stat-val green">${good}</div>
-        <div class="stat-label">Good standing</div>
+        <div class="stat-label">Requirements met</div>
       </div>
       <div class="stat-card">
         <div class="stat-val" style="color:var(--amber)">${atrisk}</div>
-        <div class="stat-label">At risk</div>
+        <div class="stat-label">On pace</div>
       </div>
       <div class="stat-card">
         <div class="stat-val red">${prob}</div>
-        <div class="stat-label">Probation</div>
+        <div class="stat-label">At risk</div>
       </div>
       <div class="stat-card">
         <div class="stat-val">${avgTotal}</div>
