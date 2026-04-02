@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AED Points Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f7f5f0;
+      --surface: #ffffff;
+      --surface2: #f0ede6;
+      --border: rgba(0,0,0,0.08);
+      --border-strong: rgba(0,0,0,0.15);
+      --text: #1a1916;
+      --text-muted: #6b6860;
+      --text-faint: #9e9b94;
+      --garnet: #73000a;
+      --garnet-light: #f5e9ea;
+      --garnet-mid: #c4525c;
+      --gold: #a07830;
+      --gold-light: #faf3e6;
+      --green: #2d6a4f;
+      --green-light: #e8f5ee;
+      --amber: #92600a;
+      --amber-light: #fef3dc;
+      --red: #9b2335;
+      --red-light: #fdecea;
+      --radius: 10px;
+      --radius-lg: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* Header */
+    header {
+      background: var(--garnet);
+      padding: 0 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+    .logo {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .logo-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 20px;
+      color: #fff;
+      letter-spacing: 0.01em;
+    }
+    .logo-sub {
+      font-size: 12px;
+      color: rgba(255,255,255,0.55);
+      font-weight: 300;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .refresh-btn {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.85);
+      padding: 6px 14px;
+      border-radius: 99px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.15s;
+    }
+    .refresh-btn:hover { background: rgba(255,255,255,0.2); }
+    .last-updated {
+      font-size: 12px;
+      color: rgba(255,255,255,0.45);
+    }
+
+    /* Main layout */
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Status messages */
+    .status-loading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+    }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid var(--border-strong);
+      border-top-color: var(--garnet);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .status-error {
+      background: var(--red-light);
+      border: 1px solid rgba(155,35,53,0.2);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-size: 14px;
+      color: var(--red);
+      margin-bottom: 1.5rem;
+    }
+
+    /* Stat cards */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 1.75rem;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.1rem 1.25rem;
+    }
+    .stat-card.accent { background: var(--garnet); border-color: var(--garnet); }
+    .stat-val {
+      font-family: 'DM Serif Display', serif;
+      font-size: 28px;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .stat-card.accent .stat-val { color: #fff; }
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 500;
+    }
+    .stat-card.accent .stat-label { color: rgba(255,255,255,0.55); }
+    .stat-val.green { color: var(--green); }
+    .stat-val.red { color: var(--red); }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 2px;
+      background: var(--surface2);
+      border-radius: var(--radius);
+      padding: 4px;
+      margin-bottom: 1.5rem;
+      width: fit-content;
+    }
+    .tab {
+      padding: 7px 18px;
+      font-size: 14px;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      border-radius: 7px;
+      font-weight: 400;
+      transition: all 0.15s;
+    }
+    .tab.active {
+      background: var(--surface);
+      color: var(--text);
+      font-weight: 500;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    /* Controls row */
+    .controls-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .search-wrap { flex: 1; min-width: 200px; position: relative; }
+    .search-icon {
+      position: absolute;
+      left: 12px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-faint);
+      font-size: 14px;
+      pointer-events: none;
+    }
+    .search-bar {
+      width: 100%;
+      padding: 9px 12px 9px 34px;
+      font-size: 14px;
+      font-family: 'DM Sans', sans-serif;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+    }
+    .search-bar:focus { outline: none; border-color: var(--garnet-mid); box-shadow: 0 0 0 3px rgba(115,0,10,0.08); }
+    .sort-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .sort-label { font-size: 12px; color: var(--text-faint); }
+    .sort-btn {
+      padding: 5px 12px;
+      font-size: 12px;
+      font-family: 'DM Sans', sans-serif;
+      border: 1px solid var(--border-strong);
+      border-radius: 99px;
+      background: var(--surface);
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+    .sort-btn.active {
+      background: var(--garnet);
+      color: #fff;
+      border-color: var(--garnet);
+    }
+    .sort-btn:hover:not(.active) { background: var(--surface2); color: var(--text); }
+
+    /* Panel */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* Table */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    thead { background: var(--surface2); }
+    th {
+      text-align: left;
+      padding: 10px 14px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-faint);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr { transition: background 0.1s; cursor: pointer; }
+    tbody tr:hover td { background: var(--garnet-light); }
+
+    .rank-num { font-size: 12px; color: var(--text-faint); text-align: center; }
+    .rank-1 { color: var(--gold); font-weight: 500; font-family: 'DM Serif Display', serif; font-size: 15px; }
+    .rank-2 { color: #6b7280; font-weight: 500; }
+    .rank-3 { color: var(--amber); font-weight: 500; }
+    .member-name { font-weight: 500; font-size: 14px; }
+    .total-pts { font-family: 'DM Serif Display', serif; font-size: 17px; color: var(--garnet); }
+    .cat-cell { white-space: nowrap; }
+    .cat-val { font-weight: 500; }
+    .cat-req { color: var(--text-faint); font-size: 11px; }
+    .mini-bar-bg { background: var(--surface2); border-radius: 99px; height: 4px; width: 60px; margin-top: 3px; }
+    .mini-bar-fill { height: 4px; border-radius: 99px; transition: width 0.3s; }
+
+    /* Pills */
+    .pill {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .pill-good { background: var(--green-light); color: var(--green); }
+    .pill-warn { background: var(--amber-light); color: var(--amber); }
+    .pill-bad { background: var(--red-light); color: var(--red); }
+
+    /* Member lookup list */
+    .member-list { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .member-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 18px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .member-row:last-child { border-bottom: none; }
+    .member-row:hover { background: var(--garnet-light); }
+    .member-row-left { display: flex; align-items: center; gap: 12px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .member-row-name { font-weight: 500; font-size: 14px; }
+    .member-row-right { display: flex; align-items: center; gap: 12px; }
+    .member-row-pts { font-family: 'DM Serif Display', serif; font-size: 16px; color: var(--garnet); }
+    .chevron { color: var(--text-faint); font-size: 16px; }
+
+    /* Member detail */
+    .detail-header {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-muted);
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-family: 'DM Sans', sans-serif;
+      margin-bottom: 1rem;
+      padding: 0;
+    }
+    .back-btn:hover { color: var(--garnet); }
+    .detail-name { font-family: 'DM Serif Display', serif; font-size: 26px; margin-bottom: 4px; }
+    .detail-meta { font-size: 13px; color: var(--text-muted); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .detail-cats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-top: 1.25rem;
+    }
+    .detail-cat-card {
+      background: var(--bg);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+    .detail-cat-label { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+    .detail-cat-val { font-family: 'DM Serif Display', serif; font-size: 26px; line-height: 1; margin-bottom: 2px; }
+    .detail-cat-req { font-size: 12px; color: var(--text-faint); margin-bottom: 8px; }
+    .detail-bar-bg { background: var(--border); border-radius: 99px; height: 6px; }
+    .detail-bar-fill { height: 6px; border-radius: 99px; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-faint);
+      font-size: 14px;
+    }
+
+    /* Responsive */
+    @media (max-width: 700px) {
+      main { padding: 1rem; }
+      .hide-mobile { display: none; }
+      .sort-row { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-title">AED</span>
+      <span class="logo-sub">Points Tracker</span>
+    </div>
+    <div class="header-right">
+      <span class="last-updated" id="last-updated"></span>
+      <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div id="status-area"></div>
+
+  <div id="app" style="display:none">
+    <div class="stats-row" id="stats-row"></div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('leaderboard')">Leaderboard</button>
+      <button class="tab" onclick="switchTab('lookup')">Member lookup</button>
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="panel active" id="panel-leaderboard">
+      <div class="controls-row">
+        <div class="search-wrap">
+          <span class="search-icon">⌕</span>
+          <input class="search-bar" type="text" placeholder="Search member..." oninput="filterLB(this.value)" id="lb-search">
+        </div>
+      </div>
+      <div class="sort-row" style="margin-bottom:1rem">
+        <span class="sort-label">Sort by:</span>
+        <button class="sort-btn active" onclick="sortBy('total',this)">Total</button>
+        <button class="sort-btn" onclick="sortBy('chapter',this)">Chapter</button>
+        <button class="sort-btn" onclick="sortBy('social',this)">Social</button>
+        <button class="sort-btn" onclick="sortBy('professional',this)">Professional</button>
+        <button class="sort-btn" onclick="sortBy('service',this)">Service</button>
+        <button class="sort-btn" onclick="sortBy('biglittle',this)">Big/Little</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Total</th>
+              <th class="hide-mobile">Chapter<br><span style="font-size:10px;color:#bbb">req: 4</span></th>
+              <th class="hide-mobile">Social<br><span style="font-size:10px;color:#bbb">req: 3</span></th>
+              <th class="hide-mobile">Professional<br><span style="font-size:10px;color:#bbb">req: 2</span></th>
+              <th class="hide-mobile">Service<br><span style="font-size:10px;color:#bbb">req: 3</span></th>
+              <th class="hide-mobile">Big/Little<br><span style="font-size:10px;color:#bbb">req: 1</span></th>
+              <th>Standing</th>
+            </tr>
+          </thead>
+          <tbody id="lb-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Lookup -->
+    <div class="panel" id="panel-lookup">
+      <div id="lookup-list-view">
+        <div class="controls-row">
+          <div class="search-wrap">
+            <span class="search-icon">⌕</span>
+            <input class="search-bar" type="text" placeholder="Search your name..." oninput="filterLookup(this.value)">
+          </div>
+        </div>
+        <div class="member-list" id="lookup-list"></div>
+      </div>
+      <div id="lookup-detail-view" style="display:none"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+  // ── CONFIG ──────────────────────────────────────────────────────────────
+  const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTxnyB3R7l_pE3_2pOc2eSOTIeM2KSWl82JW-2ynq2YfCY7mfve3S1PKfbtgXSXG0Zc-u9o0UuOLjyo/pub?gid=981064968&single=true&output=csv';
+  const REQS = { chapter: 4, social: 3, professional: 2, service: 3, biglittle: 1 };
+  // ────────────────────────────────────────────────────────────────────────
+
+  const CAT_KEYS = ['chapter','social','professional','service','biglittle'];
+  const CAT_LABELS = { chapter:'Chapter', social:'Social', professional:'Professional', service:'Service', biglittle:'Big/Little' };
+
+  let allMembers = [];
+  let currentSort = 'total';
+  let lbQuery = '';
+
+  function parseCSV(text) {
+    const lines = text.trim().split('\n');
+    const headers = lines[0].split(',').map(h => h.replace(/"/g,'').trim().toUpperCase());
+    function col(name) {
+      const exact = headers.indexOf(name);
+      if (exact >= 0) return exact;
+      return headers.findIndex(h => h.includes(name));
+    }
+    const idx = {
+      first: col('FIRST NAME'),
+      last: col('LAST NAME'),
+      email: col('EMAIL'),
+      chapter: col('CHAPTER'),
+      social: col('SOCIAL'),
+      professional: col('PROFESSIONAL'),
+      service: col('SERVICE'),
+      biglittle: headers.findIndex(h => h.replace(/[^A-Z]/g,'') === 'BIGLITTLE' || h === 'BIG/LITTLE'),
+      total: col('TOTAL'),
+    };
+    return lines.slice(1).map(line => {
+      const cols = line.split(',').map(c => c.replace(/"/g,'').trim());
+      if (!cols[idx.first] && !cols[idx.last]) return null;
+      return {
+        first: idx.first >= 0 ? (cols[idx.first] || '') : '',
+        last: idx.last >= 0 ? (cols[idx.last] || '') : '',
+        email: idx.email >= 0 ? (cols[idx.email] || '') : '',
+        chapter: parseFloat(cols[idx.chapter]) || 0,
+        social: parseFloat(cols[idx.social]) || 0,
+        professional: parseFloat(cols[idx.professional]) || 0,
+        service: parseFloat(cols[idx.service]) || 0,
+        biglittle: idx.biglittle >= 0 ? (parseFloat(cols[idx.biglittle]) || 0) : 0,
+        total: idx.total >= 0 ? (parseFloat(cols[idx.total]) || 0) : 0,
+      };
+    }).filter(Boolean);
+  }
+
+  function standing(m) {
+    const failing = CAT_KEYS.filter(k => (m[k]||0) < REQS[k]).length;
+    return failing === 0 ? 'good' : failing <= 1 ? 'warn' : 'bad';
+  }
+  function standingPill(m) {
+    const s = standing(m);
+    const cls = s==='good'?'pill-good':s==='warn'?'pill-warn':'pill-bad';
+    const lbl = s==='good'?'Good standing':s==='warn'?'At risk':'Probation';
+    return `<span class="pill ${cls}">${lbl}</span>`;
+  }
+  function dotColor(m) {
+    const s = standing(m);
+    return s==='good'?'#2d6a4f':s==='warn'?'#92600a':'#9b2335';
+  }
+  function miniBar(val, req) {
+    const pct = Math.min(100, Math.round((val||0)/req*100));
+    const col = pct>=100?'#2d6a4f':pct>=60?'#92600a':'#9b2335';
+    return `<div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${pct}%;background:${col}"></div></div>`;
+  }
+  function detailBar(val, req) {
+    const pct = Math.min(100, Math.round((val||0)/req*100));
+    const col = pct>=100?'#2d6a4f':pct>=60?'#92600a':'#9b2335';
+    return `<div class="detail-bar-bg"><div class="detail-bar-fill" style="width:${pct}%;background:${col}"></div></div>`;
+  }
+  function rankClass(r) {
+    if (r===1) return 'rank-num rank-1';
+    if (r===2) return 'rank-num rank-2';
+    if (r===3) return 'rank-num rank-3';
+    return 'rank-num';
+  }
+  function rankLabel(r) {
+    if (r===1) return '🥇';
+    if (r===2) return '🥈';
+    if (r===3) return '🥉';
+    return r;
+  }
+
+  function renderLB(list) {
+    const ranked = [...allMembers].sort((a,b)=>(b[currentSort]||0)-(a[currentSort]||0));
+    const body = document.getElementById('lb-body');
+    if (!list.length) {
+      body.innerHTML = `<tr><td colspan="9"><div class="empty-state">No members match your search.</div></td></tr>`;
+      return;
+    }
+    body.innerHTML = list.map(m => {
+      const rank = ranked.indexOf(m)+1;
+      return `<tr onclick="showDetail('${esc(m.first+' '+m.last)}')">
+        <td><span class="${rankClass(rank)}">${rankLabel(rank)}</span></td>
+        <td><span class="member-name">${m.first} ${m.last}</span></td>
+        <td><span class="total-pts">${m.total||0}</span></td>
+        ${CAT_KEYS.map(k=>`<td class="cat-cell hide-mobile">
+          <span class="cat-val">${m[k]||0}</span><span class="cat-req"> /${REQS[k]}</span>
+          ${miniBar(m[k],REQS[k])}
+        </td>`).join('')}
+        <td>${standingPill(m)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderStats() {
+    const good = allMembers.filter(m=>standing(m)==='good').length;
+    const atrisk = allMembers.filter(m=>standing(m)==='warn').length;
+    const prob = allMembers.filter(m=>standing(m)==='bad').length;
+    const avgTotal = allMembers.length ? Math.round(allMembers.reduce((s,m)=>s+(m.total||0),0)/allMembers.length) : 0;
+    document.getElementById('stats-row').innerHTML = `
+      <div class="stat-card accent">
+        <div class="stat-val">${allMembers.length}</div>
+        <div class="stat-label">Total members</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val green">${good}</div>
+        <div class="stat-label">Good standing</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--amber)">${atrisk}</div>
+        <div class="stat-label">At risk</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val red">${prob}</div>
+        <div class="stat-label">Probation</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val">${avgTotal}</div>
+        <div class="stat-label">Avg total pts</div>
+      </div>`;
+  }
+
+  function renderLookupList(list) {
+    const el = document.getElementById('lookup-list');
+    if (!list.length) {
+      el.innerHTML = `<div class="empty-state">No members found.</div>`;
+      return;
+    }
+    el.innerHTML = list.map(m => `
+      <div class="member-row" onclick="showDetail('${esc(m.first+' '+m.last)}')">
+        <div class="member-row-left">
+          <div class="status-dot" style="background:${dotColor(m)}"></div>
+          <span class="member-row-name">${m.first} ${m.last}</span>
+        </div>
+        <div class="member-row-right">
+          <span class="member-row-pts">${m.total||0} pts</span>
+          ${standingPill(m)}
+          <span class="chevron">›</span>
+        </div>
+      </div>`).join('');
+  }
+
+  function showDetail(fullname) {
+    const m = allMembers.find(x=>`${x.first} ${x.last}`===fullname);
+    if (!m) return;
+    const detail = document.getElementById('lookup-detail-view');
+    detail.innerHTML = `
+      <button class="back-btn" onclick="closeDetail()">‹ Back</button>
+      <div class="detail-header">
+        <div class="detail-name">${m.first} ${m.last}</div>
+        <div class="detail-meta">
+          ${m.email ? `<span>${m.email}</span>` : ''}
+          <span>Total: <strong>${m.total||0} pts</strong></span>
+          ${standingPill(m)}
+        </div>
+        <div class="detail-cats">
+          ${CAT_KEYS.map(k=>`
+            <div class="detail-cat-card">
+              <div class="detail-cat-label">${CAT_LABELS[k]}</div>
+              <div class="detail-cat-val" style="color:${(m[k]||0)>=REQS[k]?'var(--green)':'var(--red)'}">${m[k]||0}</div>
+              <div class="detail-cat-req">required: ${REQS[k]}</div>
+              ${detailBar(m[k],REQS[k])}
+            </div>`).join('')}
+        </div>
+      </div>`;
+    document.getElementById('lookup-list-view').style.display = 'none';
+    detail.style.display = 'block';
+    switchTab('lookup');
+  }
+
+  function closeDetail() {
+    document.getElementById('lookup-list-view').style.display = 'block';
+    document.getElementById('lookup-detail-view').style.display = 'none';
+  }
+
+  function sortBy(key, btn) {
+    currentSort = key;
+    document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    allMembers.sort((a,b)=>(b[key]||0)-(a[key]||0));
+    filterLB(lbQuery);
+  }
+
+  function filterLB(q) {
+    lbQuery = q;
+    renderLB(allMembers.filter(m=>`${m.first} ${m.last}`.toLowerCase().includes(q.toLowerCase())));
+  }
+  function filterLookup(q) {
+    renderLookupList(allMembers.filter(m=>`${m.first} ${m.last}`.toLowerCase().includes(q.toLowerCase())));
+  }
+
+  function switchTab(id) {
+    document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['leaderboard','lookup'][i]===id));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById('panel-'+id).classList.add('active');
+  }
+
+  function esc(str) { return str.replace(/'/g,"\\'"); }
+
+  function setStatus(html) { document.getElementById('status-area').innerHTML = html; }
+
+  async function loadData() {
+    setStatus(`<div class="status-loading"><div class="spinner"></div>Loading member data...</div>`);
+    document.getElementById('app').style.display = 'none';
+    try {
+      const res = await fetch(CSV_URL);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      const members = parseCSV(text);
+      if (!members.length) throw new Error('No data rows found. Check that your sheet columns match: FIRST NAME, LAST NAME, EMAIL ADDRESS, CHAPTER, SOCIAL, PROFESSIONAL, SERVICE, BIG/LITTLE, TOTAL POINTS.');
+      allMembers = members.sort((a,b)=>(b.total||0)-(a.total||0));
+      setStatus('');
+      document.getElementById('app').style.display = 'block';
+      document.getElementById('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+      renderStats();
+      renderLB(allMembers);
+      renderLookupList(allMembers);
+    } catch(e) {
+      setStatus(`<div class="status-error"><strong>Could not load data.</strong> ${e.message}</div>`);
+    }
+  }
+
+  loadData();
+</script>
+</body>
+</html>
