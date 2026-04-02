@@ -686,7 +686,7 @@
     setStatus(`<div class="status-loading"><div class="spinner"></div>Loading member data...</div>`);
     document.getElementById('app').style.display = 'none';
     try {
-      const res = await fetch(CSV_URL);
+      const res = await fetch(CSV_URL + '&t=' + Date.now(), { cache: 'no-store' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const text = await res.text();
       const members = parseCSV(text);
