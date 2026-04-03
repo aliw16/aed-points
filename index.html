@@ -817,7 +817,10 @@ Events attended:
 ${eventNames}`
         })
       });
-      if (!res.ok) throw new Error(`Worker returned ${res.status}`);
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Worker returned ${res.status}: ${errText}`);
+      }
       const data = await res.json();
       console.log('Worker response:', JSON.stringify(data));
       if (data.error) throw new Error(data.error);
