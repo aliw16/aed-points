@@ -697,12 +697,17 @@
     detail.innerHTML = `
       <button class="back-btn" onclick="closeDetail()">‹ Back</button>
       <div class="detail-header">
-        <div class="detail-name">${m.first} ${m.last}</div>
-        <div class="detail-meta">
-          ${m.email ? `<span>${m.email}</span>` : ''}
-          ${m.isNew ? `<span class="pill" style="background:#E6F1FB;color:#185FA5;font-size:11px">New member</span>` : ''}
-          <span>Total: <strong>${m.total||0} pts</strong></span>
-          ${standingPill(m)}
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+          <div>
+            <div class="detail-name">${m.first} ${m.last}</div>
+            <div class="detail-meta">
+              ${m.email ? `<span>${m.email}</span>` : ''}
+              ${m.isNew ? `<span class="pill" style="background:#E6F1FB;color:#185FA5;font-size:11px">New member</span>` : ''}
+              <span>Total: <strong>${m.total||0} pts</strong></span>
+              ${standingPill(m)}
+            </div>
+          </div>
+          <button onclick="downloadPDF('${esc(m.first+' '+m.last)}')" style="padding:8px 16px;background:var(--garnet);color:#fff;border:none;border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;white-space:nowrap;flex-shrink:0">⬇ Download PDF</button>
         </div>
         <div class="detail-cats">
           ${CAT_KEYS.map(k=>`
@@ -775,7 +780,195 @@
     }
   }
 
+  function downloadPDF(fullname) {
+    const m = allMembers.find(x=>`${x.first} ${x.last}`===fullname);
+    if (!m || typeof window.jspdf === 'undefined') {
+      alert('PDF library still loading, please try again in a moment.');
+      return;
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+    const W = 612, margin = 54, col2 = 320;
+    let y = 0;
+
+    // ── Garnet header bar ──
+    doc.setFillColor(115, 0, 10);
+    doc.rect(0, 0, W, 90, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.text('Alpha Epsilon Delta', margin, 38);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Membership Activity Summary  ·  Spring 2026', margin, 58);
+    doc.setFontSize(10);
+    doc.setTextColor(255, 200, 200);
+    doc.text('Generated ' + new Date().toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric'}), margin, 75);
+
+    y = 115;
+
+    // ── Member name + standing ──
+    doc.setTextColor(30, 25, 20);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.text(m.first + ' ' + m.last, margin, y);
+    if (m.email) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(100, 95, 90);
+      doc.text(m.email, margin, y + 16);
+    }
+
+    // Standing badge
+    const s = standing(m);
+    const badgeColor = s==='good'?[45,106,79]:s==='warn'?[146,96,10]:[155,35,53];
+    const badgeLabel = s==='good'?'Requirements Met':s==='warn'?'On Pace':'At Risk';
+    doc.setFillColor(...badgeColor);
+    doc.roundedRect(W - margin - 100, y - 16, 100, 22, 4, 4, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text(badgeLabel, W - margin - 50, y - 1, { align: 'center' });
+
+    y += 40;
+
+    // ── Points summary boxes ──
+    doc.setDrawColor(220, 215, 208);
+    doc.setLineWidth(0.5);
+    const boxW = (W - margin*2 - 16) / 5;
+    CAT_KEYS.forEach((k, i) => {
+      const x = margin + i * (boxW + 4);
+      const met = (m[k]||0) >= reqs(m)[k];
+      doc.setFillColor(met ? 232 : 253, met ? 245 : 236, met ? 238 : 234);
+      doc.roundedRect(x, y, boxW, 58, 4, 4, 'FD');
+      doc.setTextColor(met ? 45 : 155, met ? 106 : 35, met ? 79 : 53);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(20);
+      doc.text(String(m[k]||0), x + boxW/2, y + 26, { align: 'center' });
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 95, 90);
+      doc.text(CAT_LABELS[k], x + boxW/2, y + 38, { align: 'center' });
+      doc.text('req: ' + reqs(m)[k], x + boxW/2, y + 50, { align: 'center' });
+    });
+
+    y += 74;
+
+    // Total points
+    doc.setFillColor(115, 0, 10);
+    doc.roundedRect(margin, y, W - margin*2, 28, 4, 4, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text(`Total Points: ${m.total||0}`, margin + 12, y + 18);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(`${(m.events||[]).length} events attended`, W - margin - 12, y + 18, { align: 'right' });
+
+    y += 46;
+
+    // ── Skills map (static, tied to categories) ──
+    const SKILLS = {
+      chapter: ['Leadership & Governance', 'Professional Networking', 'Chapter Community'],
+      social:  ['Interpersonal Skills', 'Team Building', 'Cultural Awareness'],
+      professional: ['Clinical Knowledge', 'Healthcare Exposure', 'Career Development'],
+      service: ['Community Health', 'Volunteering & Outreach', 'Civic Engagement'],
+      biglittle: ['Mentorship', 'Peer Support', 'Relationship Building'],
+    };
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(30, 25, 20);
+    doc.text('Skills & Competencies Developed', margin, y);
+    doc.setDrawColor(115, 0, 10);
+    doc.setLineWidth(1.5);
+    doc.line(margin, y + 4, margin + 180, y + 4);
+    y += 18;
+
+    const skillBgColors = {
+      chapter: [238,237,254], social: [250,238,218],
+      professional: [230,241,251], service: [225,245,238], biglittle: [251,234,240]
+    };
+    const skillTextColors = {
+      chapter: [83,74,183], social: [132,80,11],
+      professional: [24,95,165], service: [15,110,86], biglittle: [153,53,86]
+    };
+
+    let skillX = margin, skillY = y;
+    CAT_KEYS.forEach(k => {
+      if ((m[k]||0) === 0) return;
+      SKILLS[k].forEach(skill => {
+        const tw = doc.getTextWidth(skill) + 16;
+        if (skillX + tw > W - margin) { skillX = margin; skillY += 22; }
+        doc.setFillColor(...skillBgColors[k]);
+        doc.roundedRect(skillX, skillY - 12, tw, 18, 4, 4, 'F');
+        doc.setTextColor(...skillTextColors[k]);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.text(skill, skillX + 8, skillY);
+        skillX += tw + 6;
+      });
+    });
+    y = skillY + 28;
+
+    // ── Event sections ──
+    const bycat = {};
+    CAT_KEYS.forEach(k => bycat[k] = []);
+    (m.events||[]).forEach(e => { if (bycat[e.cat]) bycat[e.cat].push(e); });
+
+    CAT_KEYS.forEach(k => {
+      const evs = bycat[k];
+      if (!evs.length) return;
+
+      // Section check — new page if needed
+      if (y > 680) { doc.addPage(); y = 54; }
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(...skillTextColors[k]);
+      doc.text(CAT_LABELS[k].toUpperCase(), margin, y);
+      doc.setDrawColor(...skillTextColors[k]);
+      doc.setLineWidth(0.75);
+      doc.line(margin, y + 3, W - margin, y + 3);
+      y += 16;
+
+      evs.forEach(e => {
+        if (y > 720) { doc.addPage(); y = 54; }
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9.5);
+        doc.setTextColor(30, 25, 20);
+        const eventName = e.name.length > 62 ? e.name.slice(0,59)+'...' : e.name;
+        doc.text('· ' + eventName, margin + 6, y);
+        if (e.date) {
+          doc.setTextColor(140, 135, 128);
+          doc.setFontSize(8.5);
+          doc.text(e.date.replace(/\s*\(.*?\)/g,'').trim(), W - margin, y, { align: 'right' });
+        }
+        y += 15;
+      });
+      y += 8;
+    });
+
+    // ── Footer on each page ──
+    const pageCount = doc.getNumberOfPages();
+    for (let p = 1; p <= pageCount; p++) {
+      doc.setPage(p);
+      doc.setFillColor(245, 242, 238);
+      doc.rect(0, 752, W, 60, 'F');
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(140, 135, 128);
+      doc.text('Alpha Epsilon Delta · University of South Carolina', margin, 770);
+      doc.text(`Page ${p} of ${pageCount}`, W - margin, 770, { align: 'right' });
+      doc.setFontSize(7.5);
+      doc.text('This document was generated from the AED Points Tracker and reflects recorded attendance as of the generation date.', margin, 784);
+    }
+
+    doc.save(`AED_${m.first}_${m.last}_Spring2026.pdf`);
+  }
+
   loadData();
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </body>
 </html>
