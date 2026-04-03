@@ -482,8 +482,10 @@
 
 <script>
   // ── CONFIG ─────────────────────────────────────────────────────────────
-  const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQj0hRWmlvqgvWpjao0tNWFDAsY-oQXPLjtSoaSXP4PXgGRtgFV-otyYt0L994syU-KqxGuqB5tqRtN/pub?gid=981064968&single=true&output=csv';
-  const REQS = { chapter: 4, social: 3, professional: 2, service: 3, biglittle: 1 };
+  const CSV_URL_CURRENT = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQj0hRWmlvqgvWpjao0tNWFDAsY-oQXPLjtSoaSXP4PXgGRtgFV-otyYt0L994syU-KqxGuqB5tqRtN/pub?gid=981064968&single=true&output=csv';
+  const CSV_URL_NEW     = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQj0hRWmlvqgvWpjao0tNWFDAsY-oQXPLjtSoaSXP4PXgGRtgFV-otyYt0L994syU-KqxGuqB5tqRtN/pub?gid=2065429635&single=true&output=csv';
+  const REQS_CURRENT = { chapter: 4, social: 3, professional: 2, service: 3, biglittle: 1 };
+  const REQS_NEW     = { chapter: 3, social: 3, professional: 2, service: 3, biglittle: 1 };
   // ────────────────────────────────────────────────────────────────────────
 
   const CAT_KEYS = ['chapter','social','professional','service','biglittle'];
@@ -514,14 +516,14 @@
     return rows;
   }
 
-  function parseCSV(text) {
+  function parseCSV(text, isNew = false) {
     const rows = parseCSVRows(text);
     if (rows.length < 3) throw new Error('Sheet has fewer than 3 rows — make sure you published the correct tab (Current Members).');
 
     const header1 = rows[0]; // event names
     const header2 = rows[1]; // dates + category labels
     const SUMMARY_START = header1.findIndex((h,i) => h.trim().toUpperCase() === 'CHAPTER' && i > 100);
-    if (SUMMARY_START < 0) throw new Error('Could not find summary columns. Make sure the full Current Members sheet is published.');
+    if (SUMMARY_START < 0) throw new Error(`Could not find summary columns in ${isNew ? 'New' : 'Current'} Members sheet.`);
 
     // Build event map: col index -> { name, date, category }
     const eventCols = [];
@@ -574,14 +576,17 @@
         service: parseFloat(cols[idxService]) || 0,
         biglittle: idxBL >= 0 ? (parseFloat(cols[idxBL]) || 0) : 0,
         events,
+        isNew,
       };
       m.total = m.chapter + m.social + m.professional + m.service + m.biglittle;
       return m;
     }).filter(Boolean);
   }
 
+  function reqs(m) { return m.isNew ? REQS_NEW : REQS_CURRENT; }
   function standing(m) {
-    const metCount = CAT_KEYS.filter(k => (m[k]||0) >= REQS[k]).length;
+    const r = reqs(m);
+    const metCount = CAT_KEYS.filter(k => (m[k]||0) >= r[k]).length;
     if (metCount === CAT_KEYS.length) return 'good';
     if (metCount >= 3 || (m.total||0) >= 7) return 'warn';
     return 'bad';
@@ -625,9 +630,9 @@
       const rank = ranked.indexOf(m)+1;
       return `<tr onclick="showDetail('${esc(m.first+' '+m.last)}')">
         <td><span class="${rankCls(rank)}">${rankLabel(rank)}</span></td>
-        <td><span class="member-name">${m.first} ${m.last}</span></td>
+        <td><span class="member-name">${m.first} ${m.last}</span>${m.isNew ? ' <span class="pill" style="background:#E6F1FB;color:#185FA5;font-size:10px">New</span>' : ''}</td>
         <td><span class="total-pts">${m.total||0}</span></td>
-        ${CAT_KEYS.map(k=>`<td class="cat-cell hide-mobile">${m[k]||0}<span class="cat-req"> /${REQS[k]}</span>${miniBar(m[k],REQS[k])}</td>`).join('')}
+        ${CAT_KEYS.map(k=>`<td class="cat-cell hide-mobile">${m[k]||0}<span class="cat-req"> /${reqs(m)[k]}</span>${miniBar(m[k],reqs(m)[k])}</td>`).join('')}
         <td>${standingPill(m)}</td>
       </tr>`;
     }).join('');
@@ -695,6 +700,7 @@
         <div class="detail-name">${m.first} ${m.last}</div>
         <div class="detail-meta">
           ${m.email ? `<span>${m.email}</span>` : ''}
+          ${m.isNew ? `<span class="pill" style="background:#E6F1FB;color:#185FA5;font-size:11px">New member</span>` : ''}
           <span>Total: <strong>${m.total||0} pts</strong></span>
           ${standingPill(m)}
         </div>
@@ -702,9 +708,9 @@
           ${CAT_KEYS.map(k=>`
             <div class="detail-cat-card">
               <div class="detail-cat-label">${CAT_LABELS[k]}</div>
-              <div class="detail-cat-val" style="color:${(m[k]||0)>=REQS[k]?'var(--green)':'var(--red)'}">${m[k]||0}</div>
-              <div class="detail-cat-req">required: ${REQS[k]}</div>
-              ${bar(m[k],REQS[k])}
+              <div class="detail-cat-val" style="color:${(m[k]||0)>=reqs(m)[k]?'var(--green)':'var(--red)'}">${m[k]||0}</div>
+              <div class="detail-cat-req">required: ${reqs(m)[k]}</div>
+              ${bar(m[k],reqs(m)[k])}
             </div>`).join('')}
         </div>
       </div>
@@ -745,11 +751,18 @@
     setStatus(`<div class="status-loading"><div class="spinner"></div>Loading member data...</div>`);
     document.getElementById('app').style.display = 'none';
     try {
-      const res = await fetch(CSV_URL + '&t=' + Date.now(), { cache: 'no-store' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const text = await res.text();
-      const members = parseCSV(text);
-      if (!members.length) throw new Error('No member rows found.');
+      const t = '&t=' + Date.now();
+      const [resCurrent, resNew] = await Promise.all([
+        fetch(CSV_URL_CURRENT + t, { cache: 'no-store' }),
+        fetch(CSV_URL_NEW + t, { cache: 'no-store' }),
+      ]);
+      if (!resCurrent.ok) throw new Error(`Could not load Current Members (HTTP ${resCurrent.status})`);
+      if (!resNew.ok) throw new Error(`Could not load New Members (HTTP ${resNew.status})`);
+      const [textCurrent, textNew] = await Promise.all([resCurrent.text(), resNew.text()]);
+      const currentMembers = parseCSV(textCurrent, false);
+      const newMembers = parseCSV(textNew, true);
+      const members = [...currentMembers, ...newMembers];
+      if (!members.length) throw new Error('No member rows found in either sheet.');
       allMembers = members.sort((a,b)=>(b.total||0)-(a.total||0));
       setStatus('');
       document.getElementById('app').style.display = 'block';
