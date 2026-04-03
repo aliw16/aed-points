@@ -802,10 +802,23 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
-          max_tokens: 400,
+          max_tokens: 500,
           messages: [{
             role: 'user',
-            content: `You are helping generate a professional membership summary for a pre-med student in Alpha Epsilon Delta (AED), a pre-health honor society. Based on the events they attended, generate a list of 8-12 concise skill/competency tags (2-5 words each) that they could highlight in a medical school application or interview. These should be specific and impressive, not generic. Return ONLY a JSON array of strings, nothing else, no markdown.\n\nEvents attended:\n${eventNames}`
+            content: `You are generating a personalized skills section for a pre-med student's AED (Alpha Epsilon Delta pre-health honor society) membership summary PDF. This will be shown to medical school admissions committees and interviewers.
+
+Your job: read each specific event below and extract the EXACT skill or experience it represents. Be highly specific — "Stop the Bleed Certification" → "Hemorrhage Control Certification", "Narcan Certification" → "Opioid Overdose Response", "US Army Suture Clinic" → "Suturing Technique Training", "Dry Needling Workshop" → "Dry Needling Exposure", "SafeTALK Training" → "Suicide Intervention Training", "Mano a Mano" → "Bilingual Community Health Outreach", "Habitat for Humanity" → "Community Housing Service".
+
+Rules:
+- Every tag must come DIRECTLY from a specific event name — no generic tags like "Leadership" or "Team Building" unless a specific event justifies it
+- 2-5 words per tag, professional and specific
+- No two tags should be similar or redundant
+- Aim for 8-14 tags total, covering the breadth of their involvement
+- Make it so this person's list could not belong to anyone else
+- Return ONLY a JSON array of strings, no markdown, no explanation
+
+Events attended:
+${eventNames}`
           }]
         })
       });
