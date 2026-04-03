@@ -819,6 +819,7 @@ ${eventNames}`
       });
       if (!res.ok) throw new Error(`Worker returned ${res.status}`);
       const data = await res.json();
+      console.log('Worker response:', JSON.stringify(data));
       if (data.error) throw new Error(data.error);
       const raw = (data.text || '').replace(/```json|```/g,'').trim();
       const parsed = JSON.parse(raw);
@@ -830,6 +831,7 @@ ${eventNames}`
 
     // Fallback — always runs if skills is still empty
     if (skills.length === 0) {
+      console.log('Using fallback. Member cats:', CAT_KEYS.map(k => `${k}:${m[k]||0}`).join(', '));
       const FALLBACK = {
         chapter: ['Chapter Leadership','Honor Society Membership','Professional Networking'],
         social: ['Interpersonal Communication','Team Building','Cultural Engagement'],
