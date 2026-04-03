@@ -793,7 +793,7 @@
     const origText = btn ? btn.textContent : '';
     if (btn) { btn.textContent = '⏳ Generating...'; btn.disabled = true; }
 
-    // ── Ask Claude to generate personalized skills from event names ──
+    // ── Ask Gemini to generate personalized skills from event names ──
     const eventNames = (m.events||[]).map(e => `[${CAT_LABELS[e.cat]}] ${e.name}`).join('\n');
     let skills = [];
     try {
@@ -817,19 +817,25 @@ Events attended:
 ${eventNames}`
         })
       });
+      if (!res.ok) throw new Error(`Worker returned ${res.status}`);
       const data = await res.json();
-      const raw = data.text || '[]';
-      const clean = raw.replace(/```json|```/g,'').trim();
-      skills = JSON.parse(clean);
+      if (data.error) throw new Error(data.error);
+      const raw = (data.text || '').replace(/```json|```/g,'').trim();
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) skills = parsed;
+      else throw new Error('Empty response from AI');
     } catch(e) {
-      // Fallback to category-based skills if API fails
-      skills = [];
+      console.warn('AI skills generation failed, using fallback:', e.message);
+    }
+
+    // Fallback — always runs if skills is still empty
+    if (skills.length === 0) {
       const FALLBACK = {
-        chapter: ['Leadership & Governance','Chapter Community','Professional Networking'],
-        social: ['Interpersonal Skills','Team Building','Cultural Awareness'],
-        professional: ['Clinical Knowledge','Healthcare Exposure','Career Development'],
-        service: ['Community Health','Volunteering & Outreach','Civic Engagement'],
-        biglittle: ['Mentorship','Peer Support','Relationship Building'],
+        chapter: ['Chapter Leadership','Honor Society Membership','Professional Networking'],
+        social: ['Interpersonal Communication','Team Building','Cultural Engagement'],
+        professional: ['Clinical Exposure','Healthcare Career Development','Medical Knowledge'],
+        service: ['Community Health Outreach','Volunteer Service','Civic Engagement'],
+        biglittle: ['Peer Mentorship','Relationship Building','Leadership Development'],
       };
       CAT_KEYS.forEach(k => { if ((m[k]||0) > 0) skills.push(...FALLBACK[k]); });
     }
