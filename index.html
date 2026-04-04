@@ -804,11 +804,13 @@
         body: JSON.stringify({
           prompt: `A pre-med student attended the following ${(m.events||[]).length} events as a MEMBER (not organizer) of Alpha Epsilon Delta honor society. Based ONLY on these specific events they personally attended, generate 8-12 skill/competency tags for their medical school application.
 
-Each tag must map directly to one of these exact events. Frame everything as something the student GAINED or LEARNED by attending, not something they organized. Be highly specific to the actual event — "Stop the Bleed Certification" → "Hemorrhage Control Certification", "Narcan Certification" → "Opioid Overdose Response", "US Army Suture Clinic" → "Suturing Technique Training", "Mano a Mano" → "Bilingual Community Outreach", "Dry Needling Workshop" → "Dry Needling Exposure", "SafeTALK Training" → "Suicide Intervention Training".
+CRITICAL: You may ONLY generate tags for events that are explicitly listed below. Do NOT invent events or skills that are not represented in this exact list. If an event is vague (like "Chapter Meeting"), generate a tag that reflects what chapter meetings provide, not something unrelated.
 
-Do NOT use generic tags like "Leadership", "Team Building", "Event Attendance", or "Organizational Skills". Every tag must be specific enough that it could only come from THIS list of events.
+Each tag must map directly to one of these exact events. Frame everything as something the student GAINED or LEARNED by attending, not something they organized. Be highly specific to the actual event — "Stop the Bleed Certification" → "Hemorrhage Control Certification", "Narcan Certification" → "Opioid Overdose Response", "US Army Suture Clinic" → "Suturing Technique Training", "Mano a Mano" → "Bilingual Community Outreach", "Dry Needling Workshop" → "Dry Needling Exposure", "SafeTALK Training" → "Suicide Intervention Training", "Academics: Brain Under Stress" → "Stress & Burnout Awareness", "Academics: Learn to Use Anki + MCAT Workshop" → "MCAT Study Strategy", "Senior Resources" → "Elder Care Community Service", "Meet and Greet" → "Pre-Health Professional Networking", "AED Games" → "Chapter Community Engagement", "Chapter Meeting" → "Pre-Health Society Membership".
 
-Events this student attended:
+Do NOT use generic tags like "Leadership", "Team Building", "Event Planning", "Event Attendance", or "Organizational Skills" unless a specific event explicitly justifies it.
+
+Events this student attended (ONLY use these):
 ${eventNames}
 
 Return ONLY a JSON array of strings. No markdown, no explanation, nothing else.`
