@@ -870,6 +870,15 @@ Return ONLY a JSON array of strings. No markdown, no explanation, nothing else.`
     doc.setFontSize(9); doc.setTextColor(255,200,200);
     doc.text('Generated ' + new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}), margin, 74);
 
+    // Total hours in top right of header
+    doc.setTextColor(255,255,255);
+    doc.setFont('helvetica','bold'); doc.setFontSize(28);
+    doc.text(String(totalHours), W - margin, 42, { align: 'right' });
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    doc.text('total hours', W - margin, 58, { align: 'right' });
+    doc.setFontSize(8); doc.setTextColor(255,200,200);
+    doc.text(`${(m.events||[]).length} events`, W - margin, 72, { align: 'right' });
+
     y = 115;
 
     // ── Name + standing ──
