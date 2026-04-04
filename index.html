@@ -846,9 +846,8 @@ Return ONLY a JSON array of strings. No markdown, no explanation, nothing else.`
 
     if (btn) { btn.textContent = origText; btn.disabled = false; }
 
-    // ── Compute hours ──
-    const totalHours = (m.events||[]).reduce((sum, e) => sum + (e.cat === 'service' ? 2 : 1), 0);
-    const serviceHours = (m.events||[]).filter(e => e.cat === 'service').length * 2;
+    // ── Compute hours from category totals (authoritative source) ──
+    const totalHours = (m.chapter||0) + (m.social||0) + (m.professional||0) + (m.service||0)*2 + (m.biglittle||0);
 
     // ── Build PDF ──
     const { jsPDF } = window.jspdf;
