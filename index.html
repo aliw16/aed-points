@@ -398,16 +398,106 @@
       .hide-mobile { display: none; }
       .sort-row { display: none; }
     }
+
+    /* Credit animation */
+    @keyframes shimmer {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 6px rgba(255,215,0,0.3); }
+      50% { box-shadow: 0 0 14px rgba(255,215,0,0.8); }
+    }
+    .credit-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-left: 12px;
+      padding: 4px 12px;
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 99px;
+      background: rgba(255,255,255,0.08);
+      animation: fadeSlideIn 0.6s ease 0.3s both;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .credit-badge:hover {
+      background: rgba(255,255,255,0.16);
+      border-color: rgba(255,215,0,0.6);
+    }
+    .credit-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #ffd700;
+      flex-shrink: 0;
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+    .credit-text {
+      font-family: 'DM Serif Display', serif;
+      font-size: 14px;
+      background: linear-gradient(90deg, #fff 0%, #ffd700 40%, #fff 60%, #ffd700 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 3s linear infinite;
+      white-space: nowrap;
+    }
+    #intro-splash {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--garnet);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 8px;
+      animation: splashOut 0.5s ease 2.2s forwards;
+      pointer-events: none;
+    }
+    @keyframes splashOut {
+      to { opacity: 0; visibility: hidden; }
+    }
+    .splash-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 38px; color: #fff;
+      animation: fadeSlideIn 0.5s ease 0.1s both;
+    }
+    .splash-sub {
+      font-size: 13px; color: rgba(255,255,255,0.55);
+      letter-spacing: 0.1em; text-transform: uppercase;
+      animation: fadeSlideIn 0.5s ease 0.3s both;
+    }
+    .splash-credit {
+      margin-top: 20px;
+      font-family: 'DM Serif Display', serif;
+      font-size: 16px;
+      background: linear-gradient(90deg, #fff 0%, #ffd700 40%, #fff 60%, #ffd700 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: fadeSlideIn 0.5s ease 0.5s both, shimmer 2s linear 0.5s infinite;
+    }
   </style>
 </head>
 <body>
+
+<div id="intro-splash">
+  <div class="splash-title">AED Points Tracker</div>
+  <div class="splash-sub">University of South Carolina &middot; Spring 2026</div>
+  <div class="splash-credit">&#10022; Created by Ali Wallam, Historian Candidate &#10022;</div>
+</div>
 
 <header>
   <div class="header-inner">
     <div class="logo">
       <span class="logo-title">AED</span>
       <span class="logo-sub">Points Tracker</span>
-      <span style="font-family:'DM Serif Display',serif;font-size:16px;color:rgba(255,255,255,0.9);margin-left:8px">Created by Ali Wallam (Historian Candidate)</span>
+      <div class="credit-badge">
+        <div class="credit-dot"></div>
+        <span class="credit-text">Created by Ali Wallam, Historian Candidate</span>
+      </div>
     </div>
     <div class="header-right">
       <span class="last-updated" id="last-updated"></span>
