@@ -242,7 +242,7 @@
   const REQS_CURRENT={chapter:4,social:3,professional:2,service:3,biglittle:1};
   const REQS_NEW={chapter:3,social:3,professional:2,service:3,biglittle:1};
   // Publish your Events Master Template sheet as CSV and paste the URL here:
-  const CSV_URL_EVENTS='https://docs.google.com/spreadsheets/d/e/2PACX-1vQWXlQmAFENkSqRmnx0WXsg0svOfPo0yDZ-tX_tmqSmH177vbPB74QPxqZCqdk0lpu_2PtYKIctcFhE/pub?gid=673822995&single=true&output=csv';
+  const CSV_URL_EVENTS='PASTE_EVENTS_SHEET_CSV_URL_HERE';
 
   const CAT_KEYS=['chapter','social','professional','service','biglittle'];
   const CAT_LABELS={chapter:'Chapter',social:'Social',professional:'Professional',service:'Service',biglittle:'Big/Little'};
@@ -327,7 +327,7 @@
         outline:idx.outline>=0?(row[idx.outline]||'').trim():'',
         linked:idx.linked>=0?(row[idx.linked]||'').trim():'',
       };
-      events.push(ev);
+      if(ev.desc) events.push(ev);
       if(ev.speakerInfo)speakers.push({info:ev.speakerInfo,eventName:name,date:ev.date,cat});
     });
     return{events,speakers};
@@ -395,7 +395,7 @@
     document.getElementById('archive-count').textContent=filtered.length+' event'+(filtered.length!==1?'s':'')+(archiveFilter!=='all'?' in '+CAT_LABELS[archiveFilter]:'');
     const grid=document.getElementById('archive-grid');
     if(!filtered.length){
-      grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-title">No events yet</div>Fill in the Events Master Template sheet and publish it as CSV — events will appear here automatically.</div>';
+      grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-title">No documented events yet</div>Events appear here once a description is added to the Events Master Template sheet.</div>';
       return;
     }
     grid.innerHTML=filtered.map(e=>'<div class="event-card"><div class="event-card-header"><div class="event-card-name">'+e.name+'</div>'+catBadge(e.cat)+'</div><div class="event-card-meta">'+(e.date?'<span>&#128197; '+e.date+'</span>':'')+(e.time?'<span>&#128336; '+e.time+'</span>':'')+(e.location?'<span>&#128205; '+e.location+'</span>':'')+'</div>'+(e.desc?'<div class="event-card-desc">'+e.desc+'</div>':'')+((e.inCharge||e.outline||e.linked)?'<div class="event-card-footer">'+(e.inCharge?'<span>In charge: <strong>'+e.inCharge+'</strong></span>':'')+(e.outline?'<a href="'+e.outline+'" target="_blank">&#128196; Outline</a>':'')+(e.linked?'<a href="'+e.linked+'" target="_blank">&#128226; Announcement</a>':'')+'</div>':'')+'</div>').join('');
