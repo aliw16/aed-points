@@ -136,17 +136,10 @@
     .credit-badge{display:inline-flex;align-items:center;gap:7px;margin-left:12px;padding:4px 12px;border:1px solid rgba(255,255,255,0.25);border-radius:99px;background:rgba(255,255,255,0.08);animation:fadeSlideIn 0.6s ease 0.3s both;transition:background 0.2s,border-color 0.2s;}
     .credit-badge:hover{background:rgba(255,255,255,0.16);border-color:rgba(255,215,0,0.6);}
     .credit-dot{width:7px;height:7px;border-radius:50%;background:#ffd700;flex-shrink:0;animation:pulse-glow 2s ease-in-out infinite;}
-    .credit-text{font-family:'DM Serif Display',serif;font-size:14px;background:linear-gradient(90deg,#fff 0%,#ffd700 40%,#fff 60%,#ffd700 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 3s linear infinite;white-space:nowrap;}
-    #intro-splash{position:fixed;inset:0;z-index:9999;background:var(--garnet);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;animation:splashOut 0.5s ease 2.2s forwards;pointer-events:none;}
-    @keyframes splashOut{to{opacity:0;visibility:hidden;}}
-    .splash-title{font-family:'DM Serif Display',serif;font-size:38px;color:#fff;animation:fadeSlideIn 0.5s ease 0.1s both;}
-    .splash-sub{font-size:13px;color:rgba(255,255,255,0.55);letter-spacing:0.1em;text-transform:uppercase;animation:fadeSlideIn 0.5s ease 0.3s both;}
-    .splash-credit{margin-top:20px;font-family:'DM Serif Display',serif;font-size:16px;background:linear-gradient(90deg,#fff 0%,#ffd700 40%,#fff 60%,#ffd700 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:fadeSlideIn 0.5s ease 0.5s both,shimmer 2s linear 0.5s infinite;}
+    .credit-text{font-family:'DM Serif Display',serif;font-size:14px;background:linear-gradient(90deg,#fff 0%,#ffd700 40%,#fff 60%,#ffd700 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 3s linear infinite;white-space:nowrap;}}
   </style>
 </head>
 <body>
-<div id="intro-splash">
-  <div class="splash-title">AED Points Tracker</div>
   <div class="splash-sub">University of South Carolina &middot; Spring 2026</div>
   <div class="splash-credit">&#10022; Created by Ali Wallam, Historian Candidate &#10022;</div>
 </div>
@@ -155,7 +148,7 @@
     <div class="logo">
       <span class="logo-title">AED</span>
       <span class="logo-sub">Points Tracker</span>
-      <div class="credit-badge"><div class="credit-dot"></div><span class="credit-text">Created by Ali Wallam, Historian Candidate</span></div>
+      <span style="font-family:'DM Serif Display',serif;font-size:15px;color:rgba(255,255,255,0.9);margin-left:10px">Created by Ali Wallam, Historian 2026–2027</span>
     </div>
     <div class="header-right">
       <span class="last-updated" id="last-updated"></span>
@@ -187,6 +180,7 @@
         <button class="sort-btn" onclick="sortBy('service',this)">Service</button>
         <button class="sort-btn" onclick="sortBy('biglittle',this)">Big/Little</button>
       </div>
+      <div id="lb-hint" style="font-size:12px;color:var(--text-faint);margin-bottom:8px;text-align:center"></div>
       <div class="table-wrap">
         <table>
           <thead><tr>
@@ -250,7 +244,7 @@
   const CAT_BG={chapter:'#EEEDFE',social:'#FAEEDA',professional:'#E6F1FB',service:'#E1F5EE',biglittle:'#FBEAF0'};
 
   let allMembers=[],allEvents=[],allSpeakers=[];
-  let currentSort='total',lbQuery='',archiveFilter='all',archiveQuery='',speakerQuery='';
+  let currentSort='total',lbQuery='',archiveFilter='all',archiveQuery='',speakerQuery='',lookupQuery='';
 
   function parseCSVRows(text){
     const rows=[];let row=[],cur='',inQ=false;
@@ -348,8 +342,15 @@
   function renderLB(list){
     const ranked=[...allMembers].sort((a,b)=>(b[currentSort]||0)-(a[currentSort]||0));
     const body=document.getElementById('lb-body');
-    if(!list.length){body.innerHTML='<tr><td colspan="9"><div class="empty-state">No members match your search.</div></td></tr>';return;}
-    body.innerHTML=list.map(m=>{
+    const isSearching=lbQuery.trim().length>0;
+    const display=isSearching?list:list.slice(0,20);
+    if(!isSearching&&allMembers.length>0){
+      document.getElementById('lb-hint').textContent='Showing top 20 of '+allMembers.length+' members — search by name to find anyone';
+    } else {
+      document.getElementById('lb-hint').textContent='';
+    }
+    if(!display.length){body.innerHTML='<tr><td colspan="9"><div class="empty-state">'+(isSearching?'No members match your search.':'')+'</div></td></tr>';return;}
+    body.innerHTML=display.map(m=>{
       const rank=ranked.indexOf(m)+1;
       return '<tr onclick="showDetail(\''+esc(m.first+' '+m.last)+'\')"><td><span class="'+rankCls(rank)+'">'+rankLabel(rank)+'</span></td><td><span class="member-name">'+m.first+' '+m.last+'</span>'+(m.isNew?' <span class="pill" style="background:#E6F1FB;color:#185FA5;font-size:10px">New</span>':'')+'</td><td><span class="total-pts">'+(m.total||0)+'</span></td>'+CAT_KEYS.map(k=>'<td class="cat-cell hide-mobile">'+(m[k]||0)+'<span class="cat-req"> /'+reqs(m)[k]+'</span>'+miniBar(m[k],reqs(m)[k])+'</td>').join('')+'<td>'+standingPill(m)+'</td></tr>';
     }).join('');
@@ -363,7 +364,11 @@
 
   function renderLookupList(list){
     const el=document.getElementById('lookup-list');
-    if(!list.length){el.innerHTML='<div class="empty-state">No members found.</div>';return;}
+    if(!speakerQuery&&!lbQuery){} // unused but keep reference
+    if(!list.length){
+      el.innerHTML='<div class="empty-state" style="padding:2rem">'+( lookupQuery.trim().length>0?'No members found.':'Search your name above to view your points.')+'</div>';
+      return;
+    }
     el.innerHTML=list.map(m=>'<div class="member-row" onclick="showDetail(\''+esc(m.first+' '+m.last)+'\')"><div class="member-row-left"><div class="status-dot" style="background:'+dotColor(m)+'"></div><span class="member-row-name">'+m.first+' '+m.last+'</span></div><div class="member-row-right"><span class="member-row-pts">'+(m.total||0)+' pts</span>'+standingPill(m)+'<span class="chevron">&#8250;</span></div></div>').join('');
   }
 
@@ -398,7 +403,12 @@
       grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-title">No documented events yet</div>Events appear here once a description is added to the Events Master Template sheet.</div>';
       return;
     }
-    grid.innerHTML=filtered.map(e=>'<div class="event-card"><div class="event-card-header"><div class="event-card-name">'+e.name+'</div>'+catBadge(e.cat)+'</div><div class="event-card-meta">'+(e.date?'<span>&#128197; '+e.date+'</span>':'')+(e.time?'<span>&#128336; '+e.time+'</span>':'')+(e.location?'<span>&#128205; '+e.location+'</span>':'')+'</div>'+(e.desc?'<div class="event-card-desc">'+e.desc+'</div>':'')+((e.inCharge||e.outline||e.linked)?'<div class="event-card-footer">'+(e.inCharge?'<span>In charge: <strong>'+e.inCharge+'</strong></span>':'')+(e.outline?'<a href="'+e.outline+'" target="_blank">&#128196; Outline</a>':'')+(e.linked?'<a href="'+e.linked+'" target="_blank">&#128226; Announcement</a>':'')+'</div>':'')+'</div>').join('');
+    grid.innerHTML=filtered.map((e,idx)=>{
+      const descId='desc-'+idx;
+      const shortDesc=e.desc&&e.desc.length>120?e.desc.slice(0,120)+'...':e.desc;
+      const descHTML=e.desc?'<div><div class="event-card-desc" id="'+descId+'">'+shortDesc+'</div>'+(e.desc.length>120?'<button onclick="toggleDesc(''+descId+'',this,''+e.desc.replace(/'/g,"\'").replace(/"/g,"&quot;")+'')" style="background:none;border:none;color:var(--garnet);font-size:12px;cursor:pointer;padding:2px 0;font-family:'DM Sans',sans-serif">Show more</button>':'')+'</div>':'';
+      return '<div class="event-card"><div class="event-card-header"><div class="event-card-name">'+e.name+'</div>'+catBadge(e.cat)+'</div><div class="event-card-meta">'+(e.date?'<span>&#128197; '+e.date+'</span>':'')+(e.time?'<span>&#128336; '+e.time+'</span>':'')+(e.location?'<span>&#128205; '+e.location+'</span>':'')+'</div>'+descHTML+((e.inCharge||e.outline||e.linked)?'<div class="event-card-footer">'+(e.inCharge?'<span>In charge: <strong>'+e.inCharge+'</strong></span>':'')+(e.outline?'<a href="'+e.outline+'" target="_blank">&#128196; Outline</a>':'')+(e.linked?'<a href="'+e.linked+'" target="_blank">&#128226; Announcement</a>':'')+'</div>':'')+'</div>';
+    }).join('');
   }
   function filterArchive(q){archiveQuery=q;renderArchive();}
   function setArchiveFilter(f,btn){archiveFilter=f;document.querySelectorAll('#archive-filters .filter-btn').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');renderArchive();}
@@ -418,12 +428,18 @@
 
   function sortBy(key,btn){currentSort=key;document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');allMembers.sort((a,b)=>(b[key]||0)-(a[key]||0));filterLB(lbQuery);}
   function filterLB(q){lbQuery=q;renderLB(allMembers.filter(m=>(m.first+' '+m.last).toLowerCase().includes(q.toLowerCase())));}
-  function filterLookup(q){renderLookupList(allMembers.filter(m=>(m.first+' '+m.last).toLowerCase().includes(q.toLowerCase())));}
+  function filterLookup(q){lookupQuery=q;if(!q.trim()){renderLookupList([]);return;}renderLookupList(allMembers.filter(m=>(m.first+' '+m.last).toLowerCase().includes(q.toLowerCase())));}
   function switchTab(id){
     const ids=['leaderboard','lookup','archive','speakers'];
     document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',ids[i]===id));
     document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
     document.getElementById('panel-'+id).classList.add('active');
+  }
+
+  function toggleDesc(id,btn,fullText){
+    const el=document.getElementById(id);
+    if(btn.textContent==='Show more'){el.textContent=fullText;btn.textContent='Show less';}
+    else{el.textContent=fullText.slice(0,120)+'...';btn.textContent='Show more';}
   }
 
   async function loadData(){
@@ -449,7 +465,7 @@
       setStatus('');
       document.getElementById('app').style.display='block';
       document.getElementById('last-updated').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-      renderStats();renderLB(allMembers);renderLookupList(allMembers);renderArchive();renderSpeakers();
+      renderStats();renderLB(allMembers);renderLookupList([]);renderArchive();renderSpeakers();
     }catch(e){setStatus('<div class="status-error"><strong>Could not load data.</strong> '+e.message+'</div>');}
   }
 
