@@ -428,7 +428,7 @@
     document.getElementById('speaker-count').textContent=filtered.length+' speaker'+(filtered.length!==1?'s':'');
     const grid=document.getElementById('speaker-grid');
     if(!filtered.length){
-      grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-title">No speakers yet</div>Add speaker contact info to the Speaker Contact Information column in your Events Master Template sheet.</div>';
+      grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-title">No speakers yet</div>We are working on gathering speaker contact information. Please reach out if you know anyone who would be interested.</div>';
       return;
     }
     grid.innerHTML=filtered.map(s=>'<div class="speaker-card"><div class="speaker-avatar">'+s.info.trim()[0].toUpperCase()+'</div><div class="speaker-name">'+s.info+'</div><div class="speaker-event">'+catBadge(s.cat)+' '+s.eventName+(s.date?' &middot; '+s.date:'')+'</div></div>').join('');
