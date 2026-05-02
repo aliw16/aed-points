@@ -478,7 +478,7 @@
   const PASSWORD = 'AED2026';
 
   // Replace with your deployed Google Apps Script Web App URL (same one as feedback.html)
-  const APPS_SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzz0LzPA8fA0BRMYKymwSwIGvMPf8alwFufZq40G7mcx7xqHFDbSqurl7RPI9LtFGpCkw/exec';
 
   // Base URL for your feedback page on GitHub Pages
   const FEEDBACK_BASE = 'https://aliw16.github.io/aed-points/feedback.html';
