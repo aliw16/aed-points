@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AED Feedback Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --garnet: #73000a;
+      --garnet-light: #9a0013;
+      --garnet-dark: #4a0007;
+      --gold: #c8a84b;
+      --gold-light: #e8cc7a;
+      --cream: #fdf8f2;
+      --white: #ffffff;
+      --text: #1a1a1a;
+      --text-muted: #666;
+      --border: #e8e0d5;
+      --bg: #f5f0eb;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      color: var(--text);
+    }
+
+    /* ── LOGIN SCREEN ──────────────────────────────────────────────── */
+    #loginScreen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .login-card {
+      background: var(--white);
+      border-radius: 20px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 8px 40px rgba(115,0,10,0.1);
+      text-align: center;
+    }
+
+    .monogram {
+      width: 60px;
+      height: 60px;
+      background: var(--garnet);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.25rem;
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      color: var(--gold-light);
+    }
+
+    .login-card h1 {
+      font-family: 'Playfair Display', serif;
+      color: var(--garnet-dark);
+      font-size: 1.5rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .login-card p {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .login-card input {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      background: var(--cream);
+      color: var(--text);
+      margin-bottom: 0.75rem;
+      transition: border-color 0.15s;
+    }
+
+    .login-card input:focus { outline: none; border-color: var(--garnet); }
+
+    .login-btn {
+      width: 100%;
+      padding: 0.85rem;
+      background: var(--garnet);
+      color: var(--white);
+      border: none;
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .login-btn:hover { background: var(--garnet-light); }
+
+    .login-error {
+      color: #c0392b;
+      font-size: 0.82rem;
+      margin-top: 0.6rem;
+      display: none;
+    }
+
+    /* ── MAIN APP ──────────────────────────────────────────────────── */
+    #app { display: none; }
+
+    .topbar {
+      background: var(--garnet);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .topbar h1 {
+      font-family: 'Playfair Display', serif;
+      color: var(--gold-light);
+      font-size: 1.2rem;
+    }
+
+    .topbar-sub {
+      color: rgba(232,204,122,0.6);
+      font-size: 0.8rem;
+    }
+
+    .logout-btn {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: var(--white);
+      padding: 0.4rem 1rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: background 0.15s;
+    }
+
+    .logout-btn:hover { background: rgba(255,255,255,0.2); }
+
+    .main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    /* ── TABS ──────────────────────────────────────────────────────── */
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0;
+    }
+
+    .tab {
+      padding: 0.6rem 1.25rem;
+      border: none;
+      background: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .tab.active {
+      color: var(--garnet);
+      border-bottom-color: var(--garnet);
+      font-weight: 500;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── QR GENERATOR ──────────────────────────────────────────────── */
+    .qr-card {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+      max-width: 500px;
+    }
+
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--garnet);
+      margin-bottom: 0.6rem;
+    }
+
+    .qr-card input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      background: var(--cream);
+      margin-bottom: 0.75rem;
+      transition: border-color 0.15s;
+    }
+
+    .qr-card input:focus { outline: none; border-color: var(--garnet); }
+
+    .gen-btn {
+      padding: 0.75rem 1.5rem;
+      background: var(--garnet);
+      color: var(--white);
+      border: none;
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .gen-btn:hover { background: var(--garnet-light); }
+
+    #qrOutput {
+      margin-top: 1.5rem;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    #qrCanvas {
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      background: white;
+    }
+
+    .qr-url {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      word-break: break-all;
+      text-align: center;
+      max-width: 320px;
+    }
+
+    .dl-btn {
+      padding: 0.6rem 1.25rem;
+      background: var(--cream);
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: border-color 0.15s;
+      color: var(--text);
+    }
+
+    .dl-btn:hover { border-color: var(--garnet); color: var(--garnet); }
+
+    /* ── RESULTS ───────────────────────────────────────────────────── */
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .refresh-btn {
+      padding: 0.5rem 1rem;
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .refresh-btn:hover { border-color: var(--garnet); color: var(--garnet); }
+
+    .event-filter {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .filter-pill {
+      padding: 0.4rem 1rem;
+      border-radius: 999px;
+      border: 1.5px solid var(--border);
+      background: var(--white);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: var(--text-muted);
+    }
+
+    .filter-pill:hover { border-color: var(--garnet); color: var(--garnet); }
+    .filter-pill.active { background: var(--garnet); border-color: var(--garnet); color: var(--white); }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-box {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 1.25rem;
+      text-align: center;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    }
+
+    .stat-box .val {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      color: var(--garnet);
+      line-height: 1;
+    }
+
+    .stat-box .lbl {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .star-display { color: var(--gold); font-size: 1.1rem; }
+
+    .responses-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .response-card {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 1.25rem;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+    }
+
+    .rc-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.6rem;
+    }
+
+    .rc-stars { color: var(--gold); font-size: 1rem; letter-spacing: 1px; }
+    .rc-attend {
+      font-size: 0.78rem;
+      padding: 0.25rem 0.7rem;
+      border-radius: 999px;
+      font-weight: 500;
+    }
+
+    .rc-attend.yes { background: #e8f5e9; color: #2e7d32; }
+    .rc-attend.maybe { background: #fff8e1; color: #f57f17; }
+    .rc-attend.no { background: #fce4ec; color: #c62828; }
+
+    .rc-body { font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; }
+    .rc-body p { margin-bottom: 0.35rem; }
+    .rc-body strong { color: var(--text); font-weight: 500; }
+
+    .rc-time { font-size: 0.72rem; color: #bbb; margin-top: 0.5rem; }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .loading-state {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── LOGIN ──────────────────────────────────────────────────────────── -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="monogram">ΑΕΔ</div>
+    <h1>Cabinet Access</h1>
+    <p>AED Feedback Dashboard</p>
+    <input type="password" id="pwInput" placeholder="Enter password" />
+    <button class="login-btn" id="loginBtn">Sign In</button>
+    <div class="login-error" id="loginError">Incorrect password.</div>
+  </div>
+</div>
+
+<!-- ── APP ────────────────────────────────────────────────────────────── -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="monogram" style="width:40px;height:40px;font-size:1rem;">ΑΕΔ</div>
+      <div>
+        <div class="topbar h1" style="font-family:'Playfair Display',serif;color:#e8cc7a;font-size:1.1rem;">Feedback Dashboard</div>
+        <div class="topbar-sub">Alpha Epsilon Delta · Cabinet Only</div>
+      </div>
+    </div>
+    <button class="logout-btn" id="logoutBtn">Sign Out</button>
+  </div>
+
+  <div class="main">
+    <div class="tabs">
+      <button class="tab active" data-tab="qr">QR Generator</button>
+      <button class="tab" data-tab="results">Responses</button>
+    </div>
+
+    <!-- QR TAB -->
+    <div class="tab-panel active" id="tab-qr">
+      <div class="qr-card">
+        <div class="section-label">Generate Feedback QR Code</div>
+        <input type="text" id="eventInput" placeholder="e.g. Spring Service Day, USCSOM Tour" />
+        <button class="gen-btn" id="genBtn">Generate QR Code</button>
+
+        <div id="qrOutput">
+          <div id="qrCanvas"></div>
+          <div class="qr-url" id="qrUrl"></div>
+          <button class="dl-btn" id="dlBtn">⬇ Download PNG</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS TAB -->
+    <div class="tab-panel" id="tab-results">
+      <div class="results-header">
+        <div style="font-family:'Playfair Display',serif;font-size:1.3rem;color:var(--garnet-dark);">Member Responses</div>
+        <button class="refresh-btn" id="refreshBtn">↻ Refresh</button>
+      </div>
+
+      <div class="event-filter" id="eventFilter"></div>
+
+      <div class="stats-row" id="statsRow"></div>
+
+      <div class="responses-list" id="responsesList">
+        <div class="loading-state">Loading responses…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── CONFIG ─────────────────────────────────────────────────────────────
+  const PASSWORD = 'AED2026';
+
+  // Replace with your deployed Google Apps Script Web App URL (same one as feedback.html)
+  const APPS_SCRIPT_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+
+  // Base URL for your feedback page on GitHub Pages
+  const FEEDBACK_BASE = 'https://aliw16.github.io/aed-points/feedback.html';
+
+  // ── AUTH ───────────────────────────────────────────────────────────────
+  function checkAuth() {
+    return sessionStorage.getItem('aed_auth') === 'true';
+  }
+
+  if (checkAuth()) showApp();
+
+  document.getElementById('pwInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('loginBtn').click();
+  });
+
+  document.getElementById('loginBtn').addEventListener('click', () => {
+    const val = document.getElementById('pwInput').value;
+    if (val === PASSWORD) {
+      sessionStorage.setItem('aed_auth', 'true');
+      showApp();
+    } else {
+      document.getElementById('loginError').style.display = 'block';
+      document.getElementById('pwInput').value = '';
+    }
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    sessionStorage.removeItem('aed_auth');
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('pwInput').value = '';
+  });
+
+  function showApp() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadResponses();
+  }
+
+  // ── TABS ───────────────────────────────────────────────────────────────
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ── QR GENERATOR ──────────────────────────────────────────────────────
+  let qrInstance = null;
+
+  document.getElementById('genBtn').addEventListener('click', () => {
+    const eventName = document.getElementById('eventInput').value.trim();
+    if (!eventName) return;
+
+    const slug = encodeURIComponent(eventName.replace(/\s+/g, '_'));
+    const url = `${FEEDBACK_BASE}?event=${slug}`;
+
+    document.getElementById('qrUrl').textContent = url;
+
+    const container = document.getElementById('qrCanvas');
+    container.innerHTML = '';
+
+    qrInstance = new QRCode(container, {
+      text: url,
+      width: 240,
+      height: 240,
+      colorDark: '#73000a',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+
+    document.getElementById('qrOutput').style.display = 'flex';
+  });
+
+  document.getElementById('dlBtn').addEventListener('click', () => {
+    const canvas = document.querySelector('#qrCanvas canvas');
+    if (!canvas) return;
+    const link = document.createElement('a');
+    const eventName = document.getElementById('eventInput').value.trim().replace(/\s+/g, '_');
+    link.download = `AED_Feedback_QR_${eventName}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
+
+  document.getElementById('eventInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('genBtn').click();
+  });
+
+  // ── RESPONSES ──────────────────────────────────────────────────────────
+  let allResponses = [];
+  let activeEvent = 'All';
+
+  document.getElementById('refreshBtn').addEventListener('click', loadResponses);
+
+  async function loadResponses() {
+    document.getElementById('responsesList').innerHTML = '<div class="loading-state">Loading responses…</div>';
+
+    try {
+      const res = await fetch(`${APPS_SCRIPT_URL}?action=get`);
+      const data = await res.json();
+      allResponses = data.responses || [];
+      renderResults();
+    } catch (err) {
+      document.getElementById('responsesList').innerHTML =
+        '<div class="empty-state">Could not load responses. Check your Apps Script URL.</div>';
+    }
+  }
+
+  function renderResults() {
+    const events = ['All', ...new Set(allResponses.map(r => r.event).filter(Boolean))];
+
+    // Filter pills
+    const filterEl = document.getElementById('eventFilter');
+    filterEl.innerHTML = '';
+    events.forEach(ev => {
+      const pill = document.createElement('button');
+      pill.className = 'filter-pill' + (ev === activeEvent ? ' active' : '');
+      pill.textContent = ev;
+      pill.addEventListener('click', () => {
+        activeEvent = ev;
+        renderResults();
+      });
+      filterEl.appendChild(pill);
+    });
+
+    const filtered = activeEvent === 'All'
+      ? allResponses
+      : allResponses.filter(r => r.event === activeEvent);
+
+    // Stats
+    const avgRating = filtered.length
+      ? (filtered.reduce((s, r) => s + (+r.rating || 0), 0) / filtered.length).toFixed(1)
+      : '—';
+    const wouldAttend = filtered.filter(r => r.wouldAttendAgain === 'Yes').length;
+    const hasSuggestions = filtered.filter(r => r.suggestions && r.suggestions.trim()).length;
+
+    document.getElementById('statsRow').innerHTML = `
+      <div class="stat-box">
+        <div class="val">${filtered.length}</div>
+        <div class="lbl">Responses</div>
+      </div>
+      <div class="stat-box">
+        <div class="val">${avgRating}</div>
+        <div class="lbl">Avg Rating</div>
+      </div>
+      <div class="stat-box">
+        <div class="val">${wouldAttend}</div>
+        <div class="lbl">Would Attend Again</div>
+      </div>
+      <div class="stat-box">
+        <div class="val">${hasSuggestions}</div>
+        <div class="lbl">Left Suggestions</div>
+      </div>
+    `;
+
+    // Response cards
+    const listEl = document.getElementById('responsesList');
+    if (!filtered.length) {
+      listEl.innerHTML = '<div class="empty-state">No responses yet for this event.</div>';
+      return;
+    }
+
+    listEl.innerHTML = '';
+    [...filtered].reverse().forEach(r => {
+      const stars = '★'.repeat(+r.rating || 0) + '☆'.repeat(5 - (+r.rating || 0));
+      const attendClass = r.wouldAttendAgain === 'Yes' ? 'yes'
+        : r.wouldAttendAgain === 'No' ? 'no' : 'maybe';
+
+      const card = document.createElement('div');
+      card.className = 'response-card';
+      card.innerHTML = `
+        <div class="rc-top">
+          <div class="rc-stars">${stars}</div>
+          <span class="rc-attend ${attendClass}">${r.wouldAttendAgain || '—'}</span>
+        </div>
+        <div class="rc-body">
+          ${r.openFeedback ? `<p><strong>Feedback:</strong> ${r.openFeedback}</p>` : ''}
+          ${r.suggestions ? `<p><strong>Ideas:</strong> ${r.suggestions}</p>` : ''}
+          ${!r.openFeedback && !r.suggestions ? '<p style="color:#ccc;font-style:italic;">No written comments.</p>' : ''}
+        </div>
+        <div class="rc-time">${r.timestamp || ''} · ${r.event || ''}</div>
+      `;
+      listEl.appendChild(card);
+    });
+  }
+</script>
+</body>
+</html>
