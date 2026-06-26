@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AED Chapter Display</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#1a1614;
+  --surface:#241e1b;
+  --surface2:#2c241f;
+  --border:rgba(255,255,255,0.08);
+  --text:#f7f3ec;
+  --text-muted:#c9c0b4;
+  --text-faint:#8a8076;
+  --garnet:#a3121e;
+  --garnet-light:#3a1014;
+  --gold:#d4af5a;
+  --gold-light:#e8cc7a;
+  --green:#4caf7d;
+  --green-light:rgba(76,175,125,0.14);
+  --amber:#d4a017;
+  --amber-light:rgba(212,160,23,0.14);
+  --red:#d4525c;
+  --red-light:rgba(212,82,92,0.14);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;height:100%;overflow:hidden;}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:radial-gradient(circle at 20% 15%, #2a211d 0%, var(--bg) 55%);
+  color:var(--text);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.stage{
+  width:100vw;height:100vh;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+}
+
+/* ── Chrome (always visible) ───────────────────────────── */
+.chrome-top{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:clamp(20px,3vh,40px) clamp(32px,4vw,64px) 0;
+  flex-shrink:0;
+}
+.brand{display:flex;align-items:baseline;gap:14px;}
+.brand-mark{font-family:'DM Serif Display',serif;font-size:clamp(22px,2.4vw,32px);color:var(--gold-light);}
+.brand-sub{font-size:clamp(11px,1.1vw,14px);color:var(--text-faint);letter-spacing:0.12em;text-transform:uppercase;font-weight:500;}
+.clock-wrap{display:flex;align-items:center;gap:12px;}
+.live-pulse{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(76,175,125,0.6);animation:pulse 2.4s ease-out infinite;}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(76,175,125,0.55);}70%{box-shadow:0 0 0 10px rgba(76,175,125,0);}100%{box-shadow:0 0 0 0 rgba(76,175,125,0);}}
+.clock{font-size:clamp(12px,1.1vw,15px);color:var(--text-faint);letter-spacing:0.04em;}
+
+.deck{
+  flex:1;position:relative;
+  margin:clamp(16px,2.5vh,32px) clamp(32px,4vw,64px);
+  border-radius:24px;
+  overflow:hidden;
+}
+.slide{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  padding:clamp(28px,4vh,56px) clamp(36px,5vw,72px);
+  opacity:0;
+  transform:translateY(14px) scale(0.985);
+  transition:opacity 0.65s cubic-bezier(.22,.61,.36,1), transform 0.65s cubic-bezier(.22,.61,.36,1);
+  pointer-events:none;
+}
+.slide.active{opacity:1;transform:translateY(0) scale(1);pointer-events:auto;}
+
+.slide-eyebrow{
+  font-size:clamp(12px,1.15vw,15px);color:var(--gold);letter-spacing:0.14em;text-transform:uppercase;font-weight:500;
+  margin-bottom:6px;display:flex;align-items:center;gap:10px;
+}
+.slide-eyebrow::before{content:'';width:18px;height:2px;background:var(--gold);display:inline-block;}
+.slide-title{font-family:'DM Serif Display',serif;font-size:clamp(28px,4vw,52px);line-height:1.08;margin-bottom:clamp(18px,3vh,34px);}
+
+/* progress dots */
+.progress-row{
+  display:flex;gap:10px;justify-content:center;
+  padding-bottom:clamp(20px,3vh,36px);flex-shrink:0;
+}
+.dot{
+  height:5px;border-radius:99px;background:rgba(255,255,255,0.14);
+  width:46px;overflow:hidden;position:relative;
+}
+.dot-fill{position:absolute;left:0;top:0;height:100%;width:0%;background:var(--gold);border-radius:99px;}
+.dot.done .dot-fill{width:100%;background:var(--text-faint);}
+.dot.current .dot-fill{animation:fillbar var(--slide-dur) linear forwards;}
+@keyframes fillbar{from{width:0%;}to{width:100%;}}
+
+/* ── Slide 1: Chapter Standing ───────────────────────────── */
+.standing-grid{display:flex;gap:clamp(20px,3vw,48px);align-items:center;flex:1;}
+.standing-ring-wrap{position:relative;width:clamp(180px,22vw,300px);height:clamp(180px,22vw,300px);flex-shrink:0;}
+.standing-ring-wrap svg{width:100%;height:100%;transform:rotate(-90deg);}
+.standing-ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.standing-ring-num{font-family:'DM Serif Display',serif;font-size:clamp(36px,5vw,64px);}
+.standing-ring-lbl{font-size:clamp(11px,1.1vw,14px);color:var(--text-faint);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px;}
+.standing-legend{display:flex;flex-direction:column;gap:clamp(12px,2vh,20px);}
+.legend-row{display:flex;align-items:center;gap:16px;}
+.legend-dot{width:14px;height:14px;border-radius:4px;flex-shrink:0;}
+.legend-text{font-size:clamp(16px,1.8vw,22px);}
+.legend-num{font-family:'DM Serif Display',serif;font-size:clamp(22px,2.6vw,32px);margin-left:auto;padding-left:24px;}
+
+/* ── Slide 2: Recognition wall ───────────────────────────── */
+.recog-sub{font-size:clamp(14px,1.5vw,19px);color:var(--text-muted);margin-bottom:clamp(20px,3vh,32px);max-width:60ch;}
+.recog-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:clamp(12px,1.6vw,20px);flex:1;align-content:center;}
+.recog-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:clamp(16px,2vw,26px);display:flex;flex-direction:column;gap:6px;
+  position:relative;overflow:hidden;
+}
+.recog-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold);}
+.recog-name{font-size:clamp(17px,1.9vw,24px);font-weight:500;}
+.recog-pts{font-family:'DM Serif Display',serif;font-size:clamp(13px,1.3vw,16px);color:var(--gold-light);}
+
+/* ── Slide 3: Featured event ───────────────────────────── */
+.feature-wrap{flex:1;display:flex;flex-direction:column;justify-content:center;gap:clamp(18px,2.5vh,28px);}
+.feature-name{font-family:'DM Serif Display',serif;font-size:clamp(34px,5vw,64px);line-height:1.05;}
+.feature-hype{font-size:clamp(16px,2vw,26px);color:var(--text-muted);max-width:62ch;}
+.countdown-row{display:flex;gap:clamp(14px,2.2vw,28px);margin-top:8px;}
+.cd-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:clamp(14px,2vh,24px) clamp(18px,2.4vw,32px);text-align:center;min-width:clamp(70px,9vw,120px);}
+.cd-num{font-family:'DM Serif Display',serif;font-size:clamp(32px,5vw,60px);color:var(--gold-light);line-height:1;}
+.cd-lbl{font-size:clamp(10px,1vw,13px);color:var(--text-faint);text-transform:uppercase;letter-spacing:0.1em;margin-top:6px;}
+.feature-meta{font-size:clamp(13px,1.3vw,16px);color:var(--text-faint);}
+
+/* ── Slide 4: Stat of the week ───────────────────────────── */
+.stat-hero{flex:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;}
+.stat-hero-num{font-family:'DM Serif Display',serif;font-size:clamp(64px,11vw,150px);line-height:0.95;color:var(--gold-light);}
+.stat-hero-lbl{font-size:clamp(18px,2.2vw,28px);color:var(--text-muted);margin-top:8px;max-width:50ch;}
+
+/* ── Slide 5: Shoutouts ───────────────────────────── */
+.quote-wrap{flex:1;display:flex;flex-direction:column;justify-content:center;gap:18px;}
+.quote-mark{font-family:'DM Serif Display',serif;font-size:clamp(50px,7vw,90px);color:var(--gold);line-height:0.4;opacity:0.7;}
+.quote-text{font-family:'DM Serif Display',serif;font-size:clamp(24px,3.4vw,42px);line-height:1.25;max-width:75ch;}
+.quote-event{font-size:clamp(13px,1.4vw,17px);color:var(--text-faint);margin-top:14px;}
+
+.empty-slide{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-faint);gap:10px;text-align:center;}
+.empty-slide .et{font-family:'DM Serif Display',serif;font-size:clamp(20px,2.4vw,28px);color:var(--text-muted);}
+
+@media (max-width:700px){
+  .standing-grid{flex-direction:column;}
+  .recog-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="chrome-top">
+    <div class="brand">
+      <span class="brand-mark">ΑΕΔ</span>
+      <span class="brand-sub">Chapter Pulse</span>
+    </div>
+    <div class="clock-wrap">
+      <span class="live-pulse"></span>
+      <span class="clock" id="clock"></span>
+    </div>
+  </div>
+
+  <div class="deck" id="deck"></div>
+
+  <div class="progress-row" id="progressRow"></div>
+</div>
+
+<script>
+const CSV_URL_CURRENT='https://docs.google.com/spreadsheets/d/e/2PACX-1vQunEN5nhyXLMMxz3PLknklKyMBKXztjnL8uc1Pf2-_ZUJtdUFrCX-rPj6XzfadONUjAZejb7qPhSSu/pub?gid=981064968&single=true&output=csv';
+const CSV_URL_NEW='https://docs.google.com/spreadsheets/d/e/2PACX-1vQunEN5nhyXLMMxz3PLknklKyMBKXztjnL8uc1Pf2-_ZUJtdUFrCX-rPj6XzfadONUjAZejb7qPhSSu/pub?gid=2065429635&single=true&output=csv';
+const REQS_CURRENT={chapter:4,social:3,professional:2,service:3,biglittle:1};
+const REQS_NEW={chapter:3,social:3,professional:2,service:3,biglittle:1};
+const CAT_KEYS=['chapter','social','professional','service','biglittle'];
+const CAT_LABELS={chapter:'Chapter',social:'Social',professional:'Professional',service:'Service',biglittle:'Big/Little'};
+
+// Optional: publish a "Featured Events" sheet tab as CSV (columns: Event Name, Date, Hype Line)
+// Leave as-is (or blank) to skip the featured-event slide entirely.
+const CSV_URL_FEATURED = 'PASTE_FEATURED_EVENTS_CSV_URL_HERE';
+
+// Feedback Apps Script Web App (same one feedback.html / feedback-admin.html already use)
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzz0LzPA8fA0BRMYKymwSwIGvMPf8alwFufZq40G7mcx7xqHFDbSqurl7RPI9LtFGpCkw/exec';
+
+const SLIDE_DURATION = 9000; // ms per slide
+
+let allMembers=[],featuredEvents=[],shoutouts=[];
+let slides=[],currentSlide=0,slideTimer=null;
+
+function parseCSVRows(text){
+  const rows=[];let row=[],cur='',inQ=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(c==='"'){inQ=!inQ;continue;}
+    if(c===','&&!inQ){row.push(cur.trim());cur='';continue;}
+    if((c==='\n'||c==='\r')&&!inQ){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cur.trim());rows.push(row);row=[];cur='';continue;}
+    cur+=c;
+  }
+  if(cur||row.length){row.push(cur.trim());rows.push(row);}
+  return rows;
+}
+
+function parseMembersCSV(text,isNew=false){
+  const rows=parseCSVRows(text);
+  if(rows.length<3){console.error('Members CSV ('+(isNew?'new':'current')+'): fewer than 3 rows, got',rows.length,text.slice(0,200));return[];}
+  const header1=rows[0],header2=rows[1];
+  const SUMMARY_START=header1.findIndex((h,i)=>h.trim().toUpperCase()==='CHAPTER'&&i>100);
+  if(SUMMARY_START<0){console.error('Members CSV ('+(isNew?'new':'current')+'): could not find CHAPTER summary column. Header1 sample:',header1.slice(0,20));return[];}
+  const h1up=header1.map(h=>h.trim().toUpperCase());
+  const idxChapter=SUMMARY_START,idxSocial=h1up.indexOf('SOCIAL',SUMMARY_START),idxPro=h1up.indexOf('PROFESSIONAL',SUMMARY_START),idxService=h1up.indexOf('SERVICE',SUMMARY_START);
+  const idxBL=h1up.findIndex((h,i)=>i>=SUMMARY_START&&h.replace(/[^A-Z]/g,'')==='BIGLITTLE');
+  const idxFirst=h1up.indexOf('FIRST NAME'),idxLast=h1up.indexOf('LAST NAME');
+  return rows.slice(2).map(cols=>{
+    const first=(cols[idxFirst]||'').trim(),last=(cols[idxLast]||'').trim();
+    if(!first&&!last)return null;
+    const m={first,last,chapter:parseFloat(cols[idxChapter])||0,social:parseFloat(cols[idxSocial])||0,professional:parseFloat(cols[idxPro])||0,service:parseFloat(cols[idxService])||0,biglittle:idxBL>=0?(parseFloat(cols[idxBL])||0):0,isNew};
+    m.total=m.chapter+m.social+m.professional+m.service+m.biglittle;
+    return m;
+  }).filter(Boolean);
+}
+
+function reqs(m){return m.isNew?REQS_NEW:REQS_CURRENT;}
+function standing(m){const r=reqs(m),mc=CAT_KEYS.filter(k=>(m[k]||0)>=r[k]).length;if(mc===CAT_KEYS.length)return'good';if(mc>=3||(m.total||0)>=7)return'warn';return'bad';}
+
+function parseFeaturedCSV(text){
+  const rows=parseCSVRows(text);
+  if(rows.length<2)return[];
+  const headers=rows[0].map(h=>h.trim().toLowerCase());
+  const idxName=headers.findIndex(h=>h.includes('event'));
+  const idxDate=headers.findIndex(h=>h.includes('date'));
+  const idxHype=headers.findIndex(h=>h.includes('hype'));
+  return rows.slice(1).map(r=>{
+    const name=(r[idxName]||'').trim();
+    if(!name)return null;
+    return {name,date:(r[idxDate]||'').trim(),hype:(r[idxHype]||'').trim()};
+  }).filter(Boolean).filter(e=>{
+    const d=new Date(e.date);
+    return isNaN(d)||d>=new Date(new Date().toDateString());
+  });
+}
+
+async function loadAll(){
+  const tasks=[];
+  tasks.push(fetch(CSV_URL_CURRENT+'&t='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.text();}).then(t=>parseMembersCSV(t,false)).catch(e=>{console.error('Current members load failed:',e);return [];}));
+  tasks.push(fetch(CSV_URL_NEW+'&t='+Date.now(),{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.text();}).then(t=>parseMembersCSV(t,true)).catch(e=>{console.error('New members load failed:',e);return [];}));
+
+  const featuredConfigured = CSV_URL_FEATURED && !CSV_URL_FEATURED.startsWith('PASTE');
+  if(featuredConfigured){
+    tasks.push(fetch(CSV_URL_FEATURED+'&t='+Date.now(),{cache:'no-store'}).then(r=>r.text()).then(parseFeaturedCSV).catch(()=>[]));
+  } else {
+    tasks.push(Promise.resolve([]));
+  }
+
+  tasks.push(
+    fetch(APPS_SCRIPT_URL+'?action=get').then(r=>r.json()).then(d=>d.responses||[]).catch(()=>[])
+  );
+
+  const [mCurrent,mNew,featured,responses]=await Promise.all(tasks);
+  allMembers=[...mCurrent,...mNew];
+  featuredEvents=featured;
+
+  shoutouts=responses
+    .filter(r=>(+r.rating||0)>=4 && r.openFeedback && r.openFeedback.trim().length>8)
+    .map(r=>({text:r.openFeedback.trim(),event:r.event||''}))
+    .slice(-40)
+    .reverse();
+
+  buildSlides();
+  startDeck();
+}
+
+function esc(s){return (s||'').replace(/</g,'&lt;');}
+
+function buildSlides(){
+  const out=[];
+
+  // Slide 1: Chapter standing
+  out.push(renderStandingSlide());
+
+  // Slide 2: Recognition wall
+  out.push(renderRecognitionSlide());
+
+  // Slide 3: Featured event (skip if none)
+  if(featuredEvents.length){
+    out.push(renderFeatureSlide(featuredEvents[0]));
+  }
+
+  // Slide 4: Stat of the week
+  out.push(renderStatSlide());
+
+  // Slide 5: Shoutouts (skip if none)
+  if(shoutouts.length){
+    const pick=shoutouts[Math.floor(Math.random()*Math.min(shoutouts.length,10))];
+    out.push(renderShoutoutSlide(pick));
+  }
+
+  slides=out;
+  const deck=document.getElementById('deck');
+  deck.innerHTML=slides.map((html,i)=>`<div class="slide${i===0?' active':''}" data-idx="${i}">${html}</div>`).join('');
+
+  const prow=document.getElementById('progressRow');
+  prow.innerHTML=slides.map((_,i)=>`<div class="dot" data-idx="${i}"><div class="dot-fill"></div></div>`).join('');
+}
+
+function renderStandingSlide(){
+  if(!allMembers.length){
+    return emptySlide('Chapter Standing','Member data is loading…');
+  }
+  const good=allMembers.filter(m=>standing(m)==='good').length;
+  const warn=allMembers.filter(m=>standing(m)==='warn').length;
+  const bad=allMembers.filter(m=>standing(m)==='bad').length;
+  const total=allMembers.length;
+  const pctGood=Math.round((good/total)*100);
+
+  const R=80,C=2*Math.PI*R;
+  const segGood=C*(good/total), segWarn=C*(warn/total), segBad=C*(bad/total);
+
+  return `
+    <div class="slide-eyebrow">Chapter Pulse</div>
+    <div class="slide-title">Where we stand, together</div>
+    <div class="standing-grid">
+      <div class="standing-ring-wrap">
+        <svg viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="${R}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="22"/>
+          <circle cx="100" cy="100" r="${R}" fill="none" stroke="var(--green)" stroke-width="22" stroke-dasharray="${segGood} ${C-segGood}" stroke-linecap="round"/>
+          <circle cx="100" cy="100" r="${R}" fill="none" stroke="var(--amber)" stroke-width="22" stroke-dasharray="${segWarn} ${C-segWarn}" stroke-dashoffset="${-segGood}" stroke-linecap="round"/>
+          <circle cx="100" cy="100" r="${R}" fill="none" stroke="var(--red)" stroke-width="22" stroke-dasharray="${segBad} ${C-segBad}" stroke-dashoffset="${-(segGood+segWarn)}" stroke-linecap="round"/>
+        </svg>
+        <div class="standing-ring-center">
+          <div class="standing-ring-num">${pctGood}%</div>
+          <div class="standing-ring-lbl">On track</div>
+        </div>
+      </div>
+      <div class="standing-legend">
+        <div class="legend-row"><div class="legend-dot" style="background:var(--green)"></div><div class="legend-text">Requirements met</div><div class="legend-num">${good}</div></div>
+        <div class="legend-row"><div class="legend-dot" style="background:var(--amber)"></div><div class="legend-text">On pace</div><div class="legend-num">${warn}</div></div>
+        <div class="legend-row"><div class="legend-dot" style="background:var(--red)"></div><div class="legend-text">Needs a push</div><div class="legend-num">${bad}</div></div>
+        <div class="legend-row" style="margin-top:8px;border-top:1px solid var(--border);padding-top:12px"><div class="legend-text" style="color:var(--text-faint)">Total chapter members</div><div class="legend-num" style="color:var(--text-faint)">${total}</div></div>
+      </div>
+    </div>
+  `;
+}
+
+function renderRecognitionSlide(){
+  if(!allMembers.length) return emptySlide('Member Highlights','Loading…');
+  // Soft framing: random pick from top quartile rather than strict rank, refreshes each load
+  const sorted=[...allMembers].sort((a,b)=>(b.total||0)-(a.total||0));
+  const pool=sorted.slice(0,Math.max(8,Math.ceil(sorted.length*0.25)));
+  const shuffled=[...pool].sort(()=>Math.random()-0.5).slice(0,6);
+  return `
+    <div class="slide-eyebrow">Member Highlights</div>
+    <div class="slide-title">Showing up for the chapter</div>
+    <div class="recog-sub">A few members putting in great work across events this semester.</div>
+    <div class="recog-grid">
+      ${shuffled.map(m=>`
+        <div class="recog-card">
+          <div class="recog-name">${esc(m.first)} ${esc(m.last)}</div>
+          <div class="recog-pts">${m.total||0} points earned</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderFeatureSlide(ev){
+  let cdHTML='';
+  const d=new Date(ev.date);
+  if(!isNaN(d)){
+    const now=new Date();
+    const diff=Math.max(0,d-now);
+    const days=Math.floor(diff/86400000);
+    const hours=Math.floor((diff%86400000)/3600000);
+    cdHTML=`
+      <div class="countdown-row">
+        <div class="cd-box"><div class="cd-num">${days}</div><div class="cd-lbl">Days</div></div>
+        <div class="cd-box"><div class="cd-num">${hours}</div><div class="cd-lbl">Hours</div></div>
+      </div>
+    `;
+  }
+  return `
+    <div class="slide-eyebrow">Coming Up</div>
+    <div class="feature-wrap">
+      <div class="feature-name">${esc(ev.name)}</div>
+      ${ev.hype?`<div class="feature-hype">${esc(ev.hype)}</div>`:''}
+      ${cdHTML}
+      ${ev.date?`<div class="feature-meta">${esc(ev.date)}</div>`:''}
+    </div>
+  `;
+}
+
+function renderStatSlide(){
+  if(!allMembers.length) return emptySlide('Stat of the Week','Loading…');
+  const stats=[];
+  const totalPts=allMembers.reduce((s,m)=>s+(m.total||0),0);
+  stats.push({num:totalPts,label:'total points earned by the chapter this semester'});
+
+  const byCat={};
+  CAT_KEYS.forEach(k=>byCat[k]=allMembers.reduce((s,m)=>s+(m[k]||0),0));
+  const topCat=Object.entries(byCat).sort((a,b)=>b[1]-a[1])[0];
+  if(topCat) stats.push({num:topCat[1],label:`points earned through ${CAT_LABELS[topCat[0]]} events alone`});
+
+  const newCount=allMembers.filter(m=>m.isNew).length;
+  if(newCount) stats.push({num:newCount,label:'new members building their AED record this semester'});
+
+  const avg=Math.round(totalPts/allMembers.length);
+  stats.push({num:avg,label:'average points per member so far'});
+
+  const pick=stats[Math.floor(Math.random()*stats.length)];
+  return `
+    <div class="slide-eyebrow">Stat of the Week</div>
+    <div class="stat-hero">
+      <div class="stat-hero-num">${pick.num}</div>
+      <div class="stat-hero-lbl">${esc(pick.label)}</div>
+    </div>
+  `;
+}
+
+function renderShoutoutSlide(s){
+  return `
+    <div class="slide-eyebrow">From Your Feedback</div>
+    <div class="quote-wrap">
+      <div class="quote-mark">&ldquo;</div>
+      <div class="quote-text">${esc(s.text)}</div>
+      ${s.event?`<div class="quote-event">&mdash; from feedback on ${esc(s.event)}</div>`:''}
+    </div>
+  `;
+}
+
+function emptySlide(title,msg){
+  return `
+    <div class="slide-eyebrow">Chapter Pulse</div>
+    <div class="empty-slide"><div class="et">${esc(title)}</div><div>${esc(msg)}</div></div>
+  `;
+}
+
+function startDeck(){
+  document.documentElement.style.setProperty('--slide-dur',SLIDE_DURATION+'ms');
+  showSlide(0);
+  if(slideTimer)clearInterval(slideTimer);
+  slideTimer=setInterval(advance,SLIDE_DURATION);
+}
+
+function advance(){
+  showSlide((currentSlide+1)%slides.length);
+}
+
+function showSlide(i){
+  currentSlide=i;
+  document.querySelectorAll('.slide').forEach(s=>s.classList.toggle('active',+s.dataset.idx===i));
+  document.querySelectorAll('.dot').forEach(d=>{
+    const idx=+d.dataset.idx;
+    d.classList.remove('current','done');
+    const fill=d.querySelector('.dot-fill');
+    if(idx<i){d.classList.add('done');}
+    else if(idx===i){d.classList.add('current');fill.style.animation='none';requestAnimationFrame(()=>{fill.style.animation='';});}
+    else{fill.style.width='0%';}
+  });
+}
+
+function tickClock(){
+  document.getElementById('clock').textContent=new Date().toLocaleString([], {weekday:'short',hour:'2-digit',minute:'2-digit'});
+}
+tickClock();
+setInterval(tickClock,1000*15);
+
+loadAll();
+setInterval(loadAll, 5*60*1000); // refresh data every 5 min without disrupting the loop visually
+</script>
+</body>
+</html>
