@@ -264,7 +264,7 @@
     const rows=parseCSVRows(text);
     if(rows.length<3)throw new Error('Sheet has fewer than 3 rows.');
     const header1=rows[0],header2=rows[1];
-    const SUMMARY_START=header1.findIndex((h,i)=>h.trim().toUpperCase()==='CHAPTER'&&i>100);
+    const SUMMARY_START=header1.findIndex((h,i)=>h.trim().toUpperCase()==='CHAPTER'&&i>40);
     if(SUMMARY_START<0)throw new Error('Could not find summary columns in '+(isNew?'New':'Current')+' Members sheet.');
     const eventCols=[];
     for(let i=5;i<SUMMARY_START;i++){
