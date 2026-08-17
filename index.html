@@ -121,6 +121,7 @@
     .cat-service{background:#E1F5EE;color:#0F6E56;}
     .cat-biglittle{background:#FBEAF0;color:#993556;}
     .cat-dei{background:#F3E8FF;color:#7C3AED;}
+    .cat-philanthropy{background:#FFEDD5;color:#C2410C;}
     .cat-unknown{background:var(--surface2);color:var(--text-muted);}
     .section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:10px;}
     .section-title{font-family:'DM Serif Display',serif;font-size:20px;}
@@ -178,6 +179,7 @@
         <button class="sort-btn" onclick="sortBy('service',this)">Service</button>
         <button class="sort-btn" onclick="sortBy('biglittle',this)">Big/Little</button>
         <button class="sort-btn" onclick="sortBy('dei',this)">DEI</button>
+        <button class="sort-btn" onclick="sortBy('philanthropy',this)">Philanthropy</button>
       </div>
       <div id="lb-hint" style="font-size:12px;color:var(--text-faint);margin-bottom:8px;text-align:center"></div>
       <div class="table-wrap">
@@ -190,6 +192,7 @@
             <th class="hide-mobile">Service<br><span style="font-size:10px;color:#bbb">req: 3</span></th>
             <th class="hide-mobile">Big/Little<br><span style="font-size:10px;color:#bbb">req: 1</span></th>
             <th class="hide-mobile">DEI<br><span style="font-size:10px;color:#bbb">req: 1</span></th>
+            <th class="hide-mobile">Philanthropy<br><span style="font-size:10px;color:#bbb">req: 1</span></th>
             <th>Standing</th>
           </tr></thead>
           <tbody id="lb-body"></tbody>
@@ -218,6 +221,7 @@
         <button class="filter-btn" onclick="setArchiveFilter('service',this)">Service</button>
         <button class="filter-btn" onclick="setArchiveFilter('biglittle',this)">Big/Little</button>
         <button class="filter-btn" onclick="setArchiveFilter('dei',this)">DEI</button>
+        <button class="filter-btn" onclick="setArchiveFilter('philanthropy',this)">Philanthropy</button>
       </div>
       <div class="card-grid" id="archive-grid"></div>
     </div>
@@ -234,15 +238,15 @@
 <script>
   const CSV_URL_CURRENT='https://docs.google.com/spreadsheets/d/e/2PACX-1vSdMUjMUE7LQAbaxYkgRR0_iQ-NF35k7OFtbEESuXIQMbNeWwf3YYclct1tl2_mWOMi1WbKW6jd8dXz/pub?gid=981064968&single=true&output=csv';
   const CSV_URL_NEW='https://docs.google.com/spreadsheets/d/e/2PACX-1vSdMUjMUE7LQAbaxYkgRR0_iQ-NF35k7OFtbEESuXIQMbNeWwf3YYclct1tl2_mWOMi1WbKW6jd8dXz/pub?gid=1802587221&single=true&output=csv';
-  const REQS_CURRENT={chapter:4,social:2,professional:2,service:3,biglittle:1,dei:1};
-  const REQS_NEW={chapter:3,social:2,professional:2,service:3,biglittle:1,dei:1};
+  const REQS_CURRENT={chapter:4,social:2,professional:2,service:3,biglittle:1,dei:1,philanthropy:1};
+  const REQS_NEW={chapter:3,social:2,professional:2,service:3,biglittle:1,dei:1,philanthropy:1};
   // Publish your Events Master Template sheet as CSV and paste the URL here:
   const CSV_URL_EVENTS='https://docs.google.com/spreadsheets/d/e/2PACX-1vQWXlQmAFENkSqRmnx0WXsg0svOfPo0yDZ-tX_tmqSmH177vbPB74QPxqZCqdk0lpu_2PtYKIctcFhE/pub?gid=673822995&single=true&output=csv';
 
-  const CAT_KEYS=['chapter','social','professional','service','biglittle','dei'];
-  const CAT_LABELS={chapter:'Chapter',social:'Social',professional:'Professional',service:'Service',biglittle:'Big/Little',dei:'DEI'};
-  const CAT_COLORS={chapter:'#534AB7',social:'#854F0B',professional:'#185FA5',service:'#0F6E56',biglittle:'#993556',dei:'#7C3AED'};
-  const CAT_BG={chapter:'#EEEDFE',social:'#FAEEDA',professional:'#E6F1FB',service:'#E1F5EE',biglittle:'#FBEAF0',dei:'#F3E8FF'};
+  const CAT_KEYS=['chapter','social','professional','service','biglittle','dei','philanthropy'];
+  const CAT_LABELS={chapter:'Chapter',social:'Social',professional:'Professional',service:'Service',biglittle:'Big/Little',dei:'DEI',philanthropy:'Philanthropy'};
+  const CAT_COLORS={chapter:'#534AB7',social:'#854F0B',professional:'#185FA5',service:'#0F6E56',biglittle:'#993556',dei:'#7C3AED',philanthropy:'#C2410C'};
+  const CAT_BG={chapter:'#EEEDFE',social:'#FAEEDA',professional:'#E6F1FB',service:'#E1F5EE',biglittle:'#FBEAF0',dei:'#F3E8FF',philanthropy:'#FFEDD5'};
 
   let allMembers=[],allEvents=[],allSpeakers=[];
   let currentSort='total',lbQuery='',archiveFilter='all',archiveQuery='',speakerQuery='',lookupQuery='';
@@ -275,6 +279,7 @@
       else if(dateCell.includes('(SERVICE)'))cat='service';
       else if(dateCell.includes('(BIG/LITTLE)'))cat='biglittle';
       else if(dateCell.includes('(DEI)'))cat='dei';
+      else if(dateCell.includes('(PHILANTHROPY)'))cat='philanthropy';
       else if(name.toLowerCase().startsWith('chapter'))cat='chapter';
       if(name&&cat){const dateClean=(header2[i]||'').replace(/\(.*?\)/g,'').trim();eventCols.push({col:i,name,date:dateClean,cat});}
     }
@@ -282,14 +287,15 @@
     const idxChapter=SUMMARY_START,idxSocial=h1up.indexOf('SOCIAL',SUMMARY_START),idxPro=h1up.indexOf('PROFESSIONAL',SUMMARY_START),idxService=h1up.indexOf('SERVICE',SUMMARY_START);
     const idxBL=h1up.findIndex((h,i)=>i>=SUMMARY_START&&h.replace(/[^A-Z]/g,'')==='BIGLITTLE');
     const idxDEI=h1up.indexOf('DEI',SUMMARY_START);
+    const idxPhil=h1up.indexOf('PHILANTHROPY',SUMMARY_START);
     const idxFirst=h1up.indexOf('FIRST NAME'),idxLast=h1up.indexOf('LAST NAME'),idxEmail=h1up.indexOf('EMAIL ADDRESS');
     return rows.slice(2).map(cols=>{
       const first=(cols[idxFirst]||'').trim(),last=(cols[idxLast]||'').trim();
       if(!first&&!last)return null;
       const events=[];
       for(const e of eventCols){if(e.col<cols.length&&(cols[e.col]||'').trim()==='1')events.push({name:e.name,date:e.date,cat:e.cat});}
-      const m={first,last,email:idxEmail>=0?(cols[idxEmail]||''):'',chapter:parseFloat(cols[idxChapter])||0,social:parseFloat(cols[idxSocial])||0,professional:parseFloat(cols[idxPro])||0,service:parseFloat(cols[idxService])||0,biglittle:idxBL>=0?(parseFloat(cols[idxBL])||0):0,dei:idxDEI>=0?(parseFloat(cols[idxDEI])||0):0,events,isNew};
-      m.total=m.chapter+m.social+m.professional+m.service+m.biglittle+m.dei;
+      const m={first,last,email:idxEmail>=0?(cols[idxEmail]||''):'',chapter:parseFloat(cols[idxChapter])||0,social:parseFloat(cols[idxSocial])||0,professional:parseFloat(cols[idxPro])||0,service:parseFloat(cols[idxService])||0,biglittle:idxBL>=0?(parseFloat(cols[idxBL])||0):0,dei:idxDEI>=0?(parseFloat(cols[idxDEI])||0):0,philanthropy:idxPhil>=0?(parseFloat(cols[idxPhil])||0):0,events,isNew};
+      m.total=m.chapter+m.social+m.professional+m.service+m.biglittle+m.dei+m.philanthropy;
       return m;
     }).filter(Boolean);
   }
