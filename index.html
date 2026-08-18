@@ -487,7 +487,7 @@
       }
       setStatus('');
       document.getElementById('app').style.display='block';
-      document.getElementById('last-updated').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+      document.getElementById('last-updated').textContent='Last Refreshed '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
       renderStats();renderLB(allMembers);renderLookupList([]);renderArchive();renderSpeakers();
     }catch(e){setStatus('<div class="status-error"><strong>Could not load data.</strong> '+e.message+'</div>');}
   }
