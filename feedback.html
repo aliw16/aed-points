@@ -255,7 +255,7 @@
 
       <!-- Q1: Star rating -->
       <div class="field">
-        <div class="section-label">How would you rate this event?</div>
+        <div class="section-label" id="ratingLabel">How would you rate this event?</div>
         <div class="stars" id="stars">
           <button class="star-btn" data-val="1" type="button">★</button>
           <button class="star-btn" data-val="2" type="button">★</button>
@@ -276,17 +276,18 @@
       <div class="divider"></div>
 
       <!-- Q3: Would you attend again -->
-      <div class="field">
-        <div class="section-label">Would you attend a similar event?</div>
-        <div class="pill-group" id="attendPills">
-          <button class="pill" data-val="Yes" type="button">Yes</button>
-          <button class="pill" data-val="Maybe" type="button">Maybe</button>
-          <button class="pill" data-val="No" type="button">No</button>
+      <div id="attendSection">
+        <div class="field">
+          <div class="section-label">Would you attend a similar event?</div>
+          <div class="pill-group" id="attendPills">
+            <button class="pill" data-val="Yes" type="button">Yes</button>
+            <button class="pill" data-val="Maybe" type="button">Maybe</button>
+            <button class="pill" data-val="No" type="button">No</button>
+          </div>
+          <div class="error-msg" id="attendError">Please select an option.</div>
         </div>
-        <div class="error-msg" id="attendError">Please select an option.</div>
+        <div class="divider"></div>
       </div>
-
-      <div class="divider"></div>
 
       <!-- Q4: Event suggestions -->
       <div class="field">
@@ -313,7 +314,13 @@
       ? decodeURIComponent(params.get('event').replace(/_/g, ' '))
       : null;
 
+    const isGeneralMode = !eventName;
     document.getElementById('eventBadge').textContent = eventName || 'General';
+
+    if (isGeneralMode) {
+      document.getElementById('ratingLabel').textContent = 'How would you rate your AED experience?';
+      document.getElementById('attendSection').style.display = 'none';
+    }
 
     // ── Star rating ────────────────────────────────────────────────────────
     let rating = 0;
@@ -352,7 +359,7 @@
         document.getElementById('ratingError').style.display = 'block';
         valid = false;
       }
-      if (!attendAnswer) {
+      if (!isGeneralMode && !attendAnswer) {
         document.getElementById('attendError').style.display = 'block';
         valid = false;
       }
@@ -368,7 +375,7 @@
         event: eventName || 'General',
         rating,
         openFeedback: document.getElementById('openFeedback').value.trim(),
-        wouldAttendAgain: attendAnswer,
+        wouldAttendAgain: isGeneralMode ? '' : attendAnswer,
         suggestions: document.getElementById('suggestions').value.trim()
       };
 
