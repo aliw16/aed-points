@@ -482,6 +482,7 @@
 
   // Base URL for your feedback page on GitHub Pages
   const FEEDBACK_BASE = 'https://aliw16.github.io/aed-points/feedback.html';
+  const MAX_STARS = 4;
 
   // ── AUTH ───────────────────────────────────────────────────────────────
   function checkAuth() {
@@ -624,7 +625,7 @@
       </div>
       <div class="stat-box">
         <div class="val">${avgRating}</div>
-        <div class="lbl">Avg Rating</div>
+        <div class="lbl">Avg Rating (out of 4)</div>
       </div>
       <div class="stat-box">
         <div class="val">${wouldAttend}</div>
@@ -645,7 +646,9 @@
 
     listEl.innerHTML = '';
     [...filtered].reverse().forEach(r => {
-      const stars = '★'.repeat(+r.rating || 0) + '☆'.repeat(5 - (+r.rating || 0));
+      // Clamp and floor to avoid rendering fractional or out-of-range star counts from stored values.
+      const displayedRating = Math.max(0, Math.min(MAX_STARS, Math.floor(+r.rating || 0)));
+      const stars = '★'.repeat(displayedRating) + '☆'.repeat(MAX_STARS - displayedRating);
       const attendClass = r.wouldAttendAgain === 'Yes' ? 'yes'
         : r.wouldAttendAgain === 'No' ? 'no' : 'maybe';
 
