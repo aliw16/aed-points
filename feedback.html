@@ -313,7 +313,7 @@
       ? decodeURIComponent(params.get('event').replace(/_/g, ' '))
       : null;
 
-    document.getElementById('eventBadge').textContent = eventName || 'Unknown Event';
+    document.getElementById('eventBadge').textContent = eventName || 'General';
 
     // ── Star rating ────────────────────────────────────────────────────────
     let rating = 0;
@@ -365,7 +365,7 @@
 
       const row = {
         timestamp: new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }),
-        event: eventName || 'Unknown',
+        event: eventName || 'General',
         rating,
         openFeedback: document.getElementById('openFeedback').value.trim(),
         wouldAttendAgain: attendAnswer,
