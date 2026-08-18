@@ -339,7 +339,7 @@
   }
 
   function reqs(m){return m.isNew?REQS_NEW:REQS_CURRENT;}
-  function standing(m){const r=reqs(m),mc=CAT_KEYS.filter(k=>(m[k]||0)>=r[k]).length;if(mc===CAT_KEYS.length)return'good';if(mc>=3||(m.total||0)>=7)return'warn';return'bad';}
+  function standing(m){const r=reqs(m),mc=CAT_KEYS.filter(k=>(m[k]||0)>=r[k]).length;if(mc===CAT_KEYS.length)return'good';if(mc>=3||(m.total||0)>=0)return'warn';return'bad';}
   function standingPill(m){const s=standing(m),cls=s==='good'?'pill-good':s==='warn'?'pill-warn':'pill-bad',lbl=s==='good'?'Requirements met':s==='warn'?'On pace':'At risk';return'<span class="pill '+cls+'">'+lbl+'</span>';}
   function dotColor(m){const s=standing(m);return s==='good'?'#2d6a4f':s==='warn'?'#92600a':'#9b2335';}
   function bar(val,req){const pct=Math.min(100,Math.round((val||0)/req*100)),col=pct>=100?'#2d6a4f':pct>=60?'#92600a':'#9b2335';return'<div class="detail-bar-bg"><div class="detail-bar-fill" style="width:'+pct+'%;background:'+col+'"></div></div>';}
