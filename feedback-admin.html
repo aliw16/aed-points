@@ -301,26 +301,83 @@
     .refresh-btn:hover { border-color: var(--garnet); color: var(--garnet); }
 
     .event-filter {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
+      position: relative;
+      max-width: 520px;
       margin-bottom: 1.5rem;
     }
 
-    .filter-pill {
-      padding: 0.4rem 1rem;
-      border-radius: 999px;
-      border: 1.5px solid var(--border);
-      background: var(--white);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.82rem;
-      cursor: pointer;
-      transition: all 0.15s;
+    .event-filter-label {
+      display: block;
       color: var(--text-muted);
+      font-size: 0.78rem;
+      font-weight: 500;
+      margin-bottom: 0.4rem;
     }
 
-    .filter-pill:hover { border-color: var(--garnet); color: var(--garnet); }
-    .filter-pill.active { background: var(--garnet); border-color: var(--garnet); color: var(--white); }
+    .event-select {
+      position: relative;
+    }
+
+    .event-search {
+      width: 100%;
+      padding: 0.7rem 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      background: var(--white);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .event-search:focus {
+      outline: none;
+      border-color: var(--garnet);
+      box-shadow: 0 0 0 3px rgba(115,0,10,0.08);
+    }
+
+    .event-options {
+      position: absolute;
+      z-index: 10;
+      top: calc(100% + 0.35rem);
+      left: 0;
+      right: 0;
+      max-height: 260px;
+      overflow-y: auto;
+      display: none;
+      padding: 0.35rem;
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    .event-select.open .event-options { display: block; }
+
+    .event-option {
+      width: 100%;
+      padding: 0.65rem 0.75rem;
+      border: none;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.86rem;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .event-option:hover,
+    .event-option.active {
+      background: var(--cream);
+      color: var(--garnet);
+    }
+
+    .event-option.no-results {
+      color: var(--text-muted);
+      cursor: default;
+      font-style: italic;
+    }
 
     .stats-row {
       display: grid;
@@ -421,7 +478,7 @@
   </div>
 </div>
 
-<!-- ── APP ────────────────────────────────────────────────────────────── -->
+<!-- ── APP ───────────────────────────────────────────────────────────── -->
 <div id="app">
   <div class="topbar">
     <div class="topbar-left">
@@ -462,7 +519,22 @@
         <button class="refresh-btn" id="refreshBtn">↻ Refresh</button>
       </div>
 
-      <div class="event-filter" id="eventFilter"></div>
+      <div class="event-filter">
+        <label class="event-filter-label" for="eventSearch">Filter by event</label>
+        <div class="event-select" id="eventSelect">
+          <input
+            type="search"
+            class="event-search"
+            id="eventSearch"
+            placeholder="Search events or choose All"
+            autocomplete="off"
+            aria-label="Search events"
+            aria-controls="eventOptions"
+            aria-expanded="false"
+          />
+          <div class="event-options" id="eventOptions" role="listbox"></div>
+        </div>
+      </div>
 
       <div class="stats-row" id="statsRow"></div>
 
@@ -474,7 +546,7 @@
 </div>
 
 <script>
-  // ── CONFIG ─────────────────────────────────────────────────────────────
+  // ── CONFIG ────────────────────────────────────────────────────────────
   const PASSWORD = 'AED2026';
 
   // Replace with your deployed Google Apps Script Web App URL (same one as feedback.html)
@@ -484,7 +556,7 @@
   const FEEDBACK_BASE = 'https://aliw16.github.io/aed-points/feedback.html';
   const MAX_STARS = 4;
 
-  // ── AUTH ───────────────────────────────────────────────────────────────
+  // ── AUTH ─────────────────────────────────────────────────────────────
   function checkAuth() {
     return sessionStorage.getItem('aed_auth') === 'true';
   }
@@ -519,7 +591,7 @@
     loadResponses();
   }
 
-  // ── TABS ───────────────────────────────────────────────────────────────
+  // ── TABS ───────────────────────────────────────────────────────────
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -573,8 +645,67 @@
   // ── RESPONSES ──────────────────────────────────────────────────────────
   let allResponses = [];
   let activeEvent = 'All';
+  let availableEvents = [];
+
+  const eventSelect = document.getElementById('eventSelect');
+  const eventSearch = document.getElementById('eventSearch');
+  const eventOptions = document.getElementById('eventOptions');
 
   document.getElementById('refreshBtn').addEventListener('click', loadResponses);
+
+  function setEventSelectOpen(isOpen) {
+    eventSelect.classList.toggle('open', isOpen);
+    eventSearch.setAttribute('aria-expanded', String(isOpen));
+  }
+
+  function renderEventOptions() {
+    const query = eventSearch.value.trim().toLowerCase();
+    const matchingEvents = availableEvents.filter(event => event.toLowerCase().includes(query));
+
+    eventOptions.innerHTML = '';
+
+    if (!matchingEvents.length) {
+      eventOptions.innerHTML = '<div class="event-option no-results">No matching events</div>';
+      return;
+    }
+
+    matchingEvents.forEach(event => {
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'event-option' + (event === activeEvent ? ' active' : '');
+      option.textContent = event;
+      option.setAttribute('role', 'option');
+      option.setAttribute('aria-selected', String(event === activeEvent));
+      option.addEventListener('click', () => {
+        activeEvent = event;
+        eventSearch.value = event === 'All' ? '' : event;
+        setEventSelectOpen(false);
+        renderResults();
+      });
+      eventOptions.appendChild(option);
+    });
+  }
+
+  eventSearch.addEventListener('focus', () => {
+    renderEventOptions();
+    setEventSelectOpen(true);
+  });
+
+  eventSearch.addEventListener('input', () => {
+    renderEventOptions();
+    setEventSelectOpen(true);
+  });
+
+  eventSearch.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      setEventSelectOpen(false);
+      eventSearch.value = activeEvent === 'All' ? '' : activeEvent;
+    }
+  });
+
+  document.addEventListener('click', e => {
+    if (!eventSelect.contains(e.target)) setEventSelectOpen(false);
+  });
 
   async function loadResponses() {
     document.getElementById('responsesList').innerHTML = '<div class="loading-state">Loading responses…</div>';
@@ -591,21 +722,11 @@
   }
 
   function renderResults() {
-    const events = ['All', ...new Set(allResponses.map(r => r.event).filter(Boolean))];
+    availableEvents = ['All', ...new Set(allResponses.map(r => r.event).filter(Boolean))];
 
-    // Filter pills
-    const filterEl = document.getElementById('eventFilter');
-    filterEl.innerHTML = '';
-    events.forEach(ev => {
-      const pill = document.createElement('button');
-      pill.className = 'filter-pill' + (ev === activeEvent ? ' active' : '');
-      pill.textContent = ev;
-      pill.addEventListener('click', () => {
-        activeEvent = ev;
-        renderResults();
-      });
-      filterEl.appendChild(pill);
-    });
+    if (!availableEvents.includes(activeEvent)) activeEvent = 'All';
+    eventSearch.value = activeEvent === 'All' ? '' : activeEvent;
+    renderEventOptions();
 
     const filtered = activeEvent === 'All'
       ? allResponses
