@@ -293,8 +293,14 @@
       const first=(cols[idxFirst]||'').trim(),last=(cols[idxLast]||'').trim();
       if(!first&&!last)return null;
       const events=[];
-      for(const e of eventCols){if(e.col<cols.length&&(cols[e.col]||'').trim()==='1')events.push({name:e.name,date:e.date,cat:e.cat});}
-      const m={first,last,email:idxEmail>=0?(cols[idxEmail]||''):'',chapter:parseFloat(cols[idxChapter])||0,social:parseFloat(cols[idxSocial])||0,professional:parseFloat(cols[idxPro])||0,service:parseFloat(cols[idxService])||0,biglittle:idxBL>=0?(parseFloat(cols[idxBL])||0):0,dei:idxDEI>=0?(parseFloat(cols[idxDEI])||0):0,philanthropy:idxPhil>=0?(parseFloat(cols[idxPhil])||0):0,events,isNew};
+      const totals={chapter:0,social:0,professional:0,service:0,biglittle:0,dei:0,philanthropy:0};
+      for(const e of eventCols){
+        if(e.col<cols.length&&(cols[e.col]||'').trim()==='1'){
+          events.push({name:e.name,date:e.date,cat:e.cat});
+          if(totals[e.cat]!==undefined)totals[e.cat]++;
+        }
+      }
+      const m={first,last,email:idxEmail>=0?(cols[idxEmail]||''):'',chapter:totals.chapter,social:totals.social,professional:totals.professional,service:totals.service,biglittle:totals.biglittle,dei:totals.dei,philanthropy:totals.philanthropy,events,isNew};
       m.total=m.chapter+m.social+m.professional+m.service+m.biglittle+m.dei+m.philanthropy;
       return m;
     }).filter(Boolean);
