@@ -186,7 +186,7 @@
         <table>
           <thead><tr>
             <th>#</th><th>Name</th><th>Total</th>
-            <th class="hide-mobile">Chapter<br><span style="font-size:10px;color:#bbb">req: 4</span></th>
+            <th class="hide-mobile">Chapter<br><span style="font-size:10px;color:#bbb">req: 4 (3 new)</span></th>
             <th class="hide-mobile">Social<br><span style="font-size:10px;color:#bbb">req: 2</span></th>
             <th class="hide-mobile">Professional<br><span style="font-size:10px;color:#bbb">req: 2</span></th>
             <th class="hide-mobile">Service<br><span style="font-size:10px;color:#bbb">req: 3</span></th>
@@ -345,8 +345,10 @@
   }
 
   function reqs(m){return m.isNew?REQS_NEW:REQS_CURRENT;}
-  function standing(m){const r=reqs(m),mc=CAT_KEYS.filter(k=>(m[k]||0)>=r[k]).length;if(mc===CAT_KEYS.length)return'good';if(mc>=3||(m.total||0)>=0)return'warn';return'bad';}
-  function standingPill(m){const s=standing(m),cls=s==='good'?'pill-good':s==='warn'?'pill-warn':'pill-bad',lbl=s==='good'?'Requirements met':s==='warn'?'On pace':'At risk';return'<span class="pill '+cls+'">'+lbl+'</span>';}
+  function metCategoryCount(m){const r=reqs(m);return CAT_KEYS.filter(k=>(m[k]||0)>=r[k]).length;}
+  function standing(m){const mc=metCategoryCount(m);if(mc===CAT_KEYS.length)return'good';if((m.total||0)>=6||mc>=2)return'warn';return'bad';}
+  function standingLabel(s){return s==='good'?'Requirements met':s==='warn'?'On pace':'At risk';}
+  function standingPill(m){const s=standing(m),cls=s==='good'?'pill-good':s==='warn'?'pill-warn':'pill-bad';return'<span class="pill '+cls+'">'+standingLabel(s)+'</span>';}
   function dotColor(m){const s=standing(m);return s==='good'?'#2d6a4f':s==='warn'?'#92600a':'#9b2335';}
   function bar(val,req){const pct=Math.min(100,Math.round((val||0)/req*100)),col=pct>=100?'#2d6a4f':pct>=60?'#92600a':'#9b2335';return'<div class="detail-bar-bg"><div class="detail-bar-fill" style="width:'+pct+'%;background:'+col+'"></div></div>';}
   function miniBar(val,req){const pct=Math.min(100,Math.round((val||0)/req*100)),col=pct>=100?'#2d6a4f':pct>=60?'#92600a':'#9b2335';return'<div class="mini-bar-bg"><div class="mini-bar-fill" style="width:'+pct+'%;background:'+col+'"></div></div>';}
@@ -537,7 +539,7 @@
     y=115;
     doc.setTextColor(30,25,20);doc.setFont('helvetica','bold');doc.setFontSize(20);doc.text(m.first+' '+m.last,margin,y);
     if(m.email){doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(100,95,90);doc.text(m.email,margin,y+16);}
-    const s=standing(m),bCol=s==='good'?[45,106,79]:s==='warn'?[146,96,10]:[155,35,53],bLbl=s==='good'?'Requirements Met':s==='warn'?'On Pace':'At Risk';
+    const s=standing(m),bCol=s==='good'?[45,106,79]:s==='warn'?[146,96,10]:[155,35,53],bLbl=standingLabel(s);
     doc.setFillColor(...bCol);doc.roundedRect(W-margin-104,y-16,104,22,4,4,'F');
     doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text(bLbl,W-margin-52,y-1,{align:'center'});
     y+=40;
