@@ -138,6 +138,31 @@
     .credit-badge{display:inline-flex;align-items:center;gap:7px;margin-left:12px;padding:4px 12px;border:1px solid rgba(255,255,255,0.25);border-radius:99px;background:rgba(255,255,255,0.08);animation:fadeSlideIn 0.6s ease 0.3s both;transition:background 0.2s,border-color 0.2s;}
     .credit-badge:hover{background:rgba(255,255,255,0.16);border-color:rgba(255,215,0,0.6);}
     .credit-dot{width:7px;height:7px;border-radius:50%;background:#ffd700;flex-shrink:0;animation:pulse-glow 2s ease-in-out infinite;}
+    .admin-link{background:none;border:none;color:rgba(255,255,255,0.4);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;padding:2px 4px;letter-spacing:0.03em;}
+    .admin-link:hover,.admin-link:focus-visible{color:rgba(255,255,255,0.72);}
+    .admin-shell{display:none;}
+    .admin-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.1rem;margin-bottom:1rem;}
+    .admin-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px;}
+    .admin-title{font-family:'DM Serif Display',serif;font-size:22px;}
+    .admin-sub{font-size:13px;color:var(--text-muted);}
+    .admin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-bottom:1rem;}
+    .admin-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:1rem;}
+    .admin-field{padding:9px 12px;font-size:14px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--surface);color:var(--text);min-width:0;}
+    .admin-field:focus{outline:none;border-color:var(--garnet-mid);box-shadow:0 0 0 3px rgba(115,0,10,0.08);}
+    .admin-search{flex:1;min-width:200px;}
+    .admin-btn{padding:8px 12px;border-radius:var(--radius);border:1px solid var(--border-strong);background:var(--surface);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);}
+    .admin-btn.primary{background:var(--garnet);border-color:var(--garnet);color:#fff;}
+    .admin-btn:disabled{opacity:0.55;cursor:not-allowed;}
+    .admin-msg{font-size:13px;margin-bottom:10px;color:var(--text-muted);}
+    .admin-msg.error{color:var(--red);}
+    .admin-msg.ok{color:var(--green);}
+    .admin-emails{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-bottom:1rem;}
+    .admin-email-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px;}
+    .admin-email-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:7px;}
+    .admin-email-head span{font-size:12px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.06em;}
+    .admin-email-list{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px;font-family:monospace;font-size:12px;color:var(--text-muted);min-height:64px;white-space:pre-wrap;word-break:break-word;}
+    .admin-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:auto;}
+    .admin-table{min-width:720px;}
     .credit-text{font-family:'DM Serif Display',serif;font-size:14px;background:linear-gradient(90deg,#fff 0%,#ffd700 40%,#fff 60%,#ffd700 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 3s linear infinite;white-space:nowrap;}}
   </style>
 </head>
@@ -152,6 +177,7 @@
     <div class="header-right">
       <span class="last-updated" id="last-updated"></span>
       <button class="refresh-btn" onclick="loadData()">&#8635; Refresh</button>
+      <button class="admin-link" onclick="openAdminGate()" aria-label="Open admin">owner</button>
     </div>
   </div>
 </header>
@@ -234,6 +260,62 @@
       <div class="card-grid" id="speaker-grid"></div>
     </div>
   </div>
+  <div id="admin-shell" class="admin-shell">
+    <div class="admin-card" id="admin-gate">
+      <div class="admin-head">
+        <div><div class="admin-title">Admin Access</div><div class="admin-sub">Client-side visibility gate for owner tools.</div></div>
+        <button class="back-btn" onclick="closeAdmin()">&#8249; Back</button>
+      </div>
+      <div class="admin-controls">
+        <input id="admin-password" type="password" class="admin-field admin-search" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')checkAdminPassword()">
+        <button class="admin-btn primary" onclick="checkAdminPassword()">Open</button>
+      </div>
+      <div id="admin-gate-msg" class="admin-msg"></div>
+    </div>
+    <div class="admin-card" id="admin-panel" style="display:none">
+      <div class="admin-head">
+        <div><div class="admin-title">Admin Dashboard</div><div class="admin-sub">Member export and outreach helper.</div></div>
+        <button class="back-btn" onclick="closeAdmin()">&#8249; Logout</button>
+      </div>
+      <div class="admin-grid" id="admin-stats"></div>
+      <div class="admin-controls">
+        <select id="admin-filter" class="admin-field" onchange="setAdminFilter(this.value)">
+          <option value="all">All statuses</option>
+          <option value="good">Requirements met</option>
+          <option value="warn">On pace</option>
+          <option value="bad">At risk</option>
+        </select>
+        <input id="admin-search" type="text" class="admin-field admin-search" placeholder="Search name or email" oninput="setAdminSearch(this.value)">
+        <select id="admin-sort" class="admin-field" onchange="setAdminSort(this.value)">
+          <option value="name">Sort: Name</option>
+          <option value="email">Sort: Email</option>
+          <option value="total">Sort: Total points</option>
+          <option value="met">Sort: Categories met</option>
+          <option value="standing">Sort: Standing</option>
+        </select>
+        <button class="admin-btn" id="admin-sort-dir" onclick="toggleAdminSortDirection()">A→Z</button>
+        <button class="admin-btn" onclick="copyFilteredEmails()">Copy filtered emails</button>
+        <button class="admin-btn" onclick="downloadAdminCSV()">Download CSV</button>
+      </div>
+      <div id="admin-panel-msg" class="admin-msg" aria-live="polite"></div>
+      <div class="admin-emails">
+        <div class="admin-email-box">
+          <div class="admin-email-head"><span id="admin-met-label">Requirements met</span><button class="admin-btn" onclick="copyGroupedEmails('met')">Copy</button></div>
+          <div id="admin-met-emails" class="admin-email-list"></div>
+        </div>
+        <div class="admin-email-box">
+          <div class="admin-email-head"><span id="admin-unmet-label">Not met</span><button class="admin-btn" onclick="copyGroupedEmails('unmet')">Copy</button></div>
+          <div id="admin-unmet-emails" class="admin-email-list"></div>
+        </div>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>First</th><th>Last</th><th>Email</th><th>Total</th><th>Categories met</th><th>Standing</th></tr></thead>
+          <tbody id="admin-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </main>
 <script>
   const CSV_URL_CURRENT='https://docs.google.com/spreadsheets/d/e/2PACX-1vSdMUjMUE7LQAbaxYkgRR0_iQ-NF35k7OFtbEESuXIQMbNeWwf3YYclct1tl2_mWOMi1WbKW6jd8dXz/pub?gid=981064968&single=true&output=csv';
@@ -247,9 +329,11 @@
   const CAT_LABELS={chapter:'Chapter',social:'Social',professional:'Professional',service:'Service',biglittle:'Big/Little',dei:'DEI',philanthropy:'Philanthropy'};
   const CAT_COLORS={chapter:'#534AB7',social:'#854F0B',professional:'#185FA5',service:'#0F6E56',biglittle:'#993556',dei:'#7C3AED',philanthropy:'#C2410C'};
   const CAT_BG={chapter:'#EEEDFE',social:'#FAEEDA',professional:'#E6F1FB',service:'#E1F5EE',biglittle:'#FBEAF0',dei:'#F3E8FF',philanthropy:'#FFEDD5'};
+  const ADMIN_PASSWORD='extratools';
 
   let allMembers=[],allEvents=[],allSpeakers=[];
   let currentSort='total',lbQuery='',archiveFilter='all',archiveQuery='',speakerQuery='',lookupQuery='';
+  let adminUnlocked=false,adminFilter='all',adminQuery='',adminSort='name',adminSortDir='asc';
 
   function parseCSVRows(text){
     const rows=[];let row=[],cur='',inQ=false;
@@ -356,6 +440,7 @@
   function rankLabel(r){return r===1?'🥇':r===2?'🥈':r===3?'🥉':r;}
   function catBadge(cat){const labels={chapter:'Chapter',social:'Social',professional:'Professional',service:'Service',biglittle:'Big/Little',dei:'DEI',philanthropy:'Philanthropy',unknown:'Other'};return'<span class="cat-badge cat-'+cat+'">'+(labels[cat]||cat)+'</span>';}
   function esc(str){return str.replace(/'/g,"\\'");}
+  function escHTML(str){return String(str==null?'':str).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function setStatus(html){document.getElementById('status-area').innerHTML=html;}
 
   function renderLB(list){
@@ -466,6 +551,166 @@
     document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
     document.getElementById('panel-'+id).classList.add('active');
   }
+  function openAdminGate(){
+    document.getElementById('admin-shell').style.display='block';
+    document.getElementById('app').style.display='none';
+    document.getElementById('admin-gate').style.display=adminUnlocked?'none':'block';
+    document.getElementById('admin-panel').style.display=adminUnlocked?'block':'none';
+    document.getElementById('admin-gate-msg').textContent='';
+    document.getElementById('admin-gate-msg').className='admin-msg';
+    renderAdmin();
+    if(adminUnlocked)document.getElementById('admin-search').focus();
+    else document.getElementById('admin-password').focus();
+  }
+  function closeAdmin(){
+    adminUnlocked=false;
+    document.getElementById('admin-password').value='';
+    document.getElementById('admin-shell').style.display='none';
+    document.getElementById('admin-gate').style.display='block';
+    document.getElementById('admin-panel').style.display='none';
+    document.getElementById('admin-gate-msg').textContent='';
+    document.getElementById('admin-gate-msg').className='admin-msg';
+    document.getElementById('admin-panel-msg').textContent='';
+    document.getElementById('admin-panel-msg').className='admin-msg';
+    document.getElementById('app').style.display=allMembers.length?'block':'none';
+  }
+  function checkAdminPassword(){
+    const input=document.getElementById('admin-password');
+    const msg=document.getElementById('admin-gate-msg');
+    if(input.value===ADMIN_PASSWORD){
+      adminUnlocked=true;
+      input.value='';
+      msg.textContent='';
+      msg.className='admin-msg';
+      document.getElementById('admin-gate').style.display='none';
+      document.getElementById('admin-panel').style.display='block';
+      renderAdmin();
+      document.getElementById('admin-search').focus();
+      return;
+    }
+    msg.textContent='Incorrect password.';
+    msg.className='admin-msg error';
+    input.select();
+  }
+  function setAdminFilter(v){adminFilter=v;renderAdmin();}
+  function setAdminSearch(v){adminQuery=v;renderAdmin();}
+  function setAdminSort(v){adminSort=v;renderAdmin();}
+  function toggleAdminSortDirection(){adminSortDir=adminSortDir==='asc'?'desc':'asc';renderAdmin();}
+  function adminStandingRank(s){return s==='good'?0:s==='warn'?1:2;}
+  function getAdminFilteredMembers(){
+    const q=adminQuery.trim().toLowerCase();
+    return allMembers.filter(m=>{
+      const s=standing(m);
+      if(adminFilter!=='all'&&s!==adminFilter)return false;
+      if(!q)return true;
+      return (m.first+' '+m.last).toLowerCase().includes(q)||(m.email||'').toLowerCase().includes(q);
+    }).sort((a,b)=>{
+      let av,bv;
+      if(adminSort==='name'){av=(a.last+' '+a.first).toLowerCase();bv=(b.last+' '+b.first).toLowerCase();}
+      else if(adminSort==='email'){av=(a.email||'').toLowerCase();bv=(b.email||'').toLowerCase();}
+      else if(adminSort==='total'){av=a.total||0;bv=b.total||0;}
+      else if(adminSort==='met'){av=metCategoryCount(a);bv=metCategoryCount(b);}
+      else{av=adminStandingRank(standing(a));bv=adminStandingRank(standing(b));}
+      if(av<bv)return adminSortDir==='asc'?-1:1;
+      if(av>bv)return adminSortDir==='asc'?1:-1;
+      return (a.last+' '+a.first).localeCompare(b.last+' '+b.first);
+    });
+  }
+  function csvEscape(v){const s=String(v==null?'':v);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
+  async function copyTextValue(value,msg){
+    if(!value){showAdminPanelMessage('No emails available for this view.',true);return;}
+    try{
+      if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(value);}
+      else{
+        const ta=document.createElement('textarea');
+        ta.value=value;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+      }
+      showAdminPanelMessage(msg,false);
+    }catch(e){showAdminPanelMessage('Copy failed. Please copy manually.',true);}
+  }
+  function groupedEmailLists(list){
+    const met=[...new Set(list.filter(m=>standing(m)==='good').map(m=>(m.email||'').trim()).filter(Boolean))];
+    const unmet=[...new Set(list.filter(m=>standing(m)!=='good').map(m=>(m.email||'').trim()).filter(Boolean))];
+    return{met,unmet};
+  }
+  function showAdminPanelMessage(text,isError){
+    const el=document.getElementById('admin-panel-msg');
+    el.textContent=text;
+    el.className='admin-msg '+(isError?'error':'ok');
+  }
+  function copyFilteredEmails(){
+    const list=getAdminFilteredMembers();
+    const emails=[...new Set(list.map(m=>(m.email||'').trim()).filter(Boolean))];
+    copyTextValue(emails.join(', '),'Copied filtered emails.');
+  }
+  function copyGroupedEmails(which){
+    const grouped=groupedEmailLists(getAdminFilteredMembers());
+    const emails=which==='met'?grouped.met:grouped.unmet;
+    copyTextValue(emails.join(', '),'Copied '+(which==='met'?'requirements-met':'not-met')+' emails.');
+  }
+  function downloadAdminCSV(){
+    const list=getAdminFilteredMembers();
+    if(!list.length){showAdminPanelMessage('Nothing to export for current filters.',true);return;}
+    const lines=['First Name,Last Name,Email,Total Points,Categories Met,Standing'];
+    list.forEach(m=>{
+      lines.push([csvEscape(m.first),csvEscape(m.last),csvEscape(m.email||''),csvEscape(m.total||0),csvEscape(metCategoryCount(m)+' / '+CAT_KEYS.length),csvEscape(standingLabel(standing(m)))].join(','));
+    });
+    const blob=new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8;'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download='aed-admin-filtered-members.csv';a.style.display='none';
+    document.body.appendChild(a);a.click();a.remove();
+    URL.revokeObjectURL(url);
+    showAdminPanelMessage('CSV downloaded for current filters.',false);
+  }
+  function renderAdmin(){
+    if(!document.getElementById('admin-shell'))return;
+    const filterEl=document.getElementById('admin-filter');
+    if(filterEl)filterEl.value=adminFilter;
+    const searchEl=document.getElementById('admin-search');
+    if(searchEl&&searchEl.value!==adminQuery)searchEl.value=adminQuery;
+    const sortEl=document.getElementById('admin-sort');
+    if(sortEl)sortEl.value=adminSort;
+    const sortBtn=document.getElementById('admin-sort-dir');
+    if(sortBtn)sortBtn.textContent=adminSortDir==='asc'?'A→Z':'Z→A';
+    const statsEl=document.getElementById('admin-stats');
+    if(!adminUnlocked||!statsEl)return;
+    const total=allMembers.length,good=allMembers.filter(m=>standing(m)==='good').length,warn=allMembers.filter(m=>standing(m)==='warn').length,bad=allMembers.filter(m=>standing(m)==='bad').length;
+    statsEl.innerHTML='<div class="stat-card accent"><div class="stat-val">'+total+'</div><div class="stat-label">Total members</div></div><div class="stat-card"><div class="stat-val green">'+good+'</div><div class="stat-label">Requirements met</div></div><div class="stat-card"><div class="stat-val" style="color:var(--amber)">'+warn+'</div><div class="stat-label">On pace</div></div><div class="stat-card"><div class="stat-val red">'+bad+'</div><div class="stat-label">At risk</div></div>';
+    const body=document.getElementById('admin-body');
+    body.textContent='';
+    if(!allMembers.length){
+      const tr=document.createElement('tr'),td=document.createElement('td');
+      td.colSpan=6;td.className='empty-state';td.textContent='Member data is not loaded yet. Refresh data first, then reopen admin.';
+      tr.appendChild(td);body.appendChild(tr);
+      document.getElementById('admin-met-emails').textContent='No emails available.';
+      document.getElementById('admin-unmet-emails').textContent='No emails available.';
+      document.getElementById('admin-met-label').textContent='Requirements met (0)';
+      document.getElementById('admin-unmet-label').textContent='Not met (0)';
+      return;
+    }
+    const list=getAdminFilteredMembers();
+    const grouped=groupedEmailLists(list);
+    document.getElementById('admin-met-emails').textContent=grouped.met.length?grouped.met.join(', '):'No emails in this group.';
+    document.getElementById('admin-unmet-emails').textContent=grouped.unmet.length?grouped.unmet.join(', '):'No emails in this group.';
+    document.getElementById('admin-met-label').textContent='Requirements met ('+grouped.met.length+')';
+    document.getElementById('admin-unmet-label').textContent='Not met ('+grouped.unmet.length+')';
+    if(!list.length){
+      const tr=document.createElement('tr'),td=document.createElement('td');
+      td.colSpan=6;td.className='empty-state';td.textContent='No members match current admin filters.';
+      tr.appendChild(td);body.appendChild(tr);
+      return;
+    }
+    list.forEach(m=>{
+      const tr=document.createElement('tr');
+      [m.first,m.last,m.email||'',String(m.total||0),metCategoryCount(m)+' / '+CAT_KEYS.length,standingLabel(standing(m))].forEach(v=>{
+        const td=document.createElement('td');
+        td.textContent=v;
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+  }
 
   function toggleDesc(id,btn,fullText){
     const el=document.getElementById(id);
@@ -497,6 +742,7 @@
       document.getElementById('app').style.display='block';
       document.getElementById('last-updated').textContent='Last Refreshed '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
       renderStats();renderLB(allMembers);renderLookupList([]);renderArchive();renderSpeakers();
+      renderAdmin();
     }catch(e){setStatus('<div class="status-error"><strong>Could not load data.</strong> '+e.message+'</div>');}
   }
 
