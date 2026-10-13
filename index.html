@@ -161,8 +161,14 @@
     .admin-email-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:7px;}
     .admin-email-head span{font-size:12px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.06em;}
     .admin-email-list{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px;font-family:monospace;font-size:12px;color:var(--text-muted);min-height:64px;white-space:pre-wrap;word-break:break-word;}
+    .admin-labeled-control{display:flex;flex-direction:column;gap:4px;min-width:140px;flex:1;}
+    .admin-labeled-control span{font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.04em;}
+    .admin-labeled-control .admin-field{width:100%;}
+    .admin-distribution{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px;margin-bottom:1rem;}
+    .admin-distribution-list{min-height:0;max-height:220px;overflow:auto;font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.5;}
     .admin-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:auto;}
     .admin-table{min-width:720px;}
+    @media(max-width:700px){.admin-controls .admin-btn{flex:1 1 calc(50% - 8px);}.admin-labeled-control{min-width:100%;}.admin-sort-field{min-width:100%;}}
     .credit-text{font-family:'DM Serif Display',serif;font-size:14px;background:linear-gradient(90deg,#fff 0%,#ffd700 40%,#fff 60%,#ffd700 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 3s linear infinite;white-space:nowrap;}}
   </style>
 </head>
@@ -290,10 +296,24 @@
           <option value="name">Sort: Name</option>
           <option value="email">Sort: Email</option>
           <option value="total">Sort: Total points</option>
+          <option value="category">Sort: Selected category points</option>
           <option value="met">Sort: Categories met</option>
           <option value="standing">Sort: Standing</option>
         </select>
         <button class="admin-btn" id="admin-sort-dir" onclick="toggleAdminSortDirection()">A→Z</button>
+        <label class="admin-labeled-control admin-sort-field" for="admin-category">
+          <span>Points category</span>
+          <select id="admin-category" class="admin-field" onchange="setAdminCategory(this.value)">
+            <option value="total">Total Points</option>
+            <option value="chapter">Chapter</option>
+            <option value="social">Social</option>
+            <option value="professional">Professional</option>
+            <option value="service">Service</option>
+            <option value="biglittle">Big/Little</option>
+            <option value="dei">DEI</option>
+            <option value="philanthropy">Philanthropy</option>
+          </select>
+        </label>
         <button class="admin-btn" onclick="copyFilteredEmails()">Copy filtered emails</button>
         <button class="admin-btn" onclick="downloadAdminCSV()">Download CSV</button>
       </div>
@@ -314,6 +334,10 @@
           <tbody id="admin-body"></tbody>
         </table>
       </div>
+      <div class="admin-distribution">
+        <div class="admin-email-head"><span id="admin-distribution-label">Total points distribution</span></div>
+        <div id="admin-distribution-list" class="admin-email-list admin-distribution-list"></div>
+      </div>
     </div>
   </div>
 </main>
@@ -333,7 +357,7 @@
 
   let allMembers=[],allEvents=[],allSpeakers=[];
   let currentSort='total',lbQuery='',archiveFilter='all',archiveQuery='',speakerQuery='',lookupQuery='';
-  let adminUnlocked=false,adminFilter='all',adminQuery='',adminSort='name',adminSortDir='asc';
+  let adminUnlocked=false,adminFilter='all',adminQuery='',adminSort='name',adminSortDir='asc',adminCategory='total';
 
   function parseCSVRows(text){
     const rows=[];let row=[],cur='',inQ=false;
@@ -595,26 +619,61 @@
   function setAdminFilter(v){adminFilter=v;renderAdmin();}
   function setAdminSearch(v){adminQuery=v;renderAdmin();}
   function setAdminSort(v){adminSort=v;renderAdmin();}
+  function setAdminCategory(v){adminCategory=v;adminSort='category';renderAdmin();}
   function toggleAdminSortDirection(){adminSortDir=adminSortDir==='asc'?'desc':'asc';renderAdmin();}
   function adminStandingRank(s){return s==='good'?0:s==='warn'?1:2;}
+  function adminPointsCategoryLabel(){return adminCategory==='total'?'Total Points':(CAT_LABELS[adminCategory]||'Total Points');}
+  function adminMemberPoints(m){
+    if(adminCategory==='total')return Number(m.total)||0;
+    return Number(m[adminCategory])||0;
+  }
+  function adminSortDirectionLabel(){
+    if(adminSort==='name'||adminSort==='email')return adminSortDir==='asc'?'A→Z':'Z→A';
+    if(adminSort==='standing')return adminSortDir==='asc'?'Best→Risk':'Risk→Best';
+    return adminSortDir==='asc'?'Low→High':'High→Low';
+  }
   function getAdminFilteredMembers(){
     const q=adminQuery.trim().toLowerCase();
-    return allMembers.filter(m=>{
+    const filtered=allMembers.filter(m=>{
       const s=standing(m);
       if(adminFilter!=='all'&&s!==adminFilter)return false;
       if(!q)return true;
       return (m.first+' '+m.last).toLowerCase().includes(q)||(m.email||'').toLowerCase().includes(q);
-    }).sort((a,b)=>{
+    });
+    return filtered.map((m,index)=>({m,index})).sort((aWrap,bWrap)=>{
+      const a=aWrap.m,b=bWrap.m;
       let av,bv;
       if(adminSort==='name'){av=(a.last+' '+a.first).toLowerCase();bv=(b.last+' '+b.first).toLowerCase();}
       else if(adminSort==='email'){av=(a.email||'').toLowerCase();bv=(b.email||'').toLowerCase();}
-      else if(adminSort==='total'){av=a.total||0;bv=b.total||0;}
+      else if(adminSort==='total'){av=Number(a.total)||0;bv=Number(b.total)||0;}
+      else if(adminSort==='category'){av=adminMemberPoints(a);bv=adminMemberPoints(b);}
       else if(adminSort==='met'){av=metCategoryCount(a);bv=metCategoryCount(b);}
       else{av=adminStandingRank(standing(a));bv=adminStandingRank(standing(b));}
       if(av<bv)return adminSortDir==='asc'?-1:1;
       if(av>bv)return adminSortDir==='asc'?1:-1;
-      return (a.last+' '+a.first).localeCompare(b.last+' '+b.first);
+      return aWrap.index-bWrap.index;
+    }).map(entry=>entry.m);
+  }
+  function renderAdminDistribution(list){
+    const labelEl=document.getElementById('admin-distribution-label');
+    const listEl=document.getElementById('admin-distribution-list');
+    if(!labelEl||!listEl)return;
+    const categoryLabel=adminPointsCategoryLabel();
+    labelEl.textContent=categoryLabel+' distribution (filtered)';
+    if(!list.length){listEl.textContent='No members match current admin filters.';return;}
+    const counts={};
+    let maxPoints=0;
+    list.forEach(m=>{
+      const points=adminMemberPoints(m);
+      counts[points]=(counts[points]||0)+1;
+      if(points>maxPoints)maxPoints=points;
     });
+    const lines=[];
+    for(let points=0;points<=maxPoints;points++){
+      const people=counts[points]||0;
+      lines.push(points+' point'+(points===1?'':'s')+' — '+people+' '+(people===1?'person':'people'));
+    }
+    listEl.textContent=lines.join('\n');
   }
   function csvEscape(v){const s=String(v==null?'':v);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
   async function copyTextValue(value,msg){
@@ -671,8 +730,10 @@
     if(searchEl&&searchEl.value!==adminQuery)searchEl.value=adminQuery;
     const sortEl=document.getElementById('admin-sort');
     if(sortEl)sortEl.value=adminSort;
+    const categoryEl=document.getElementById('admin-category');
+    if(categoryEl)categoryEl.value=adminCategory;
     const sortBtn=document.getElementById('admin-sort-dir');
-    if(sortBtn)sortBtn.textContent=adminSortDir==='asc'?'A→Z':'Z→A';
+    if(sortBtn)sortBtn.textContent=adminSortDirectionLabel();
     const statsEl=document.getElementById('admin-stats');
     if(!adminUnlocked||!statsEl)return;
     const total=allMembers.length,good=allMembers.filter(m=>standing(m)==='good').length,warn=allMembers.filter(m=>standing(m)==='warn').length,bad=allMembers.filter(m=>standing(m)==='bad').length;
@@ -687,9 +748,11 @@
       document.getElementById('admin-unmet-emails').textContent='No emails available.';
       document.getElementById('admin-met-label').textContent='Requirements met (0)';
       document.getElementById('admin-unmet-label').textContent='Not met (0)';
+      renderAdminDistribution([]);
       return;
     }
     const list=getAdminFilteredMembers();
+    renderAdminDistribution(list);
     const grouped=groupedEmailLists(list);
     document.getElementById('admin-met-emails').textContent=grouped.met.length?grouped.met.join(', '):'No emails in this group.';
     document.getElementById('admin-unmet-emails').textContent=grouped.unmet.length?grouped.unmet.join(', '):'No emails in this group.';
